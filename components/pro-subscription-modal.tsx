@@ -18,6 +18,7 @@ import { loadStripe } from "@stripe/stripe-js"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
+import { createCheckoutSession } from "@/lib/stripe-client"
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
@@ -56,42 +57,42 @@ export function ProSubscriptionModal({ open, onOpenChange }: ProSubscriptionModa
     setIsLoading(true)
 
     try {
-      // Call our API route to create a checkout session
-      const response = await fetch("/api/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          planType: selectedPlan,
-          email,
-        }),
-      })
+      // Determine which price ID to use
+      const priceId =
+        selectedPlan === "subscription"
+          ? process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID
+          : process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok")
+      if (!priceId) {
+        throw new Error("Price ID is not defined in environment variables")
       }
 
-      const { sessionId } = await response.json()
+      // Create checkout session
+      const { sessionId, url } = await createCheckoutSession(priceId, email)
 
-      // Redirect to Stripe checkout
-      const stripe = await stripePromise
-      if (stripe) {
-        const { error } = await stripe.redirectToCheckout({ sessionId })
-        if (error) {
-          console.error("Stripe redirect error:", error)
-          toast({
-            title: "Checkout error",
-            description: error.message || "Something went wrong. Please try again.",
-            variant: "destructive",
-          })
+      // Handle redirect to Stripe checkout
+      if (url) {
+        // Prefer direct URL redirect if available (better for edge functions)
+        window.location.href = url
+      } else if (sessionId) {
+        // Fall back to client-side redirect
+        const stripe = await stripePromise
+        if (stripe) {
+          const { error } = await stripe.redirectToCheckout({ sessionId })
+          if (error) {
+            throw error
+          }
+        } else {
+          throw new Error("Failed to initialize Stripe")
         }
+      } else {
+        throw new Error("No session ID or URL returned")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating checkout session:", error)
       toast({
         title: "Checkout error",
-        description: "Something went wrong. Please try again.",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -191,6 +192,15 @@ export function ProSubscriptionModal({ open, onOpenChange }: ProSubscriptionModa
                 <span>Priority customer support</span>
               </li>
             </ul>
+          </div>
+
+          <div className="px-3 py-2 bg-[#5EEAD4]/10 rounded-md border border-[#5EEAD4]/20 text-xs text-slate-300">
+            <p className="font-semibold text-[#5EEAD4] mb-1">Test Mode</p>
+            <p>
+              Use test card number:{" "}
+              <span className="font-mono bg-black/30 px-1 py-0.5 rounded">4242 4242 4242 4242</span>
+            </p>
+            <p>Any future expiration date, any CVC, and any postal code.</p>
           </div>
         </div>
 

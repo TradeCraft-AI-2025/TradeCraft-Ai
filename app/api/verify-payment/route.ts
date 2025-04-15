@@ -14,20 +14,47 @@ export async function GET(request: Request) {
   }
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId)
+    // Log for debugging in test mode
+    console.log(`Verifying payment session: ${sessionId}`)
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["customer", "payment_intent", "subscription"],
+    })
+
+    // Log what we received back
+    console.log(`Session status: ${session.status}`)
+    console.log(`Payment status: ${session.payment_status}`)
+
+    // Validate the payment was successful
+    if (session.payment_status !== "paid") {
+      return NextResponse.json(
+        {
+          error: `Payment not completed. Status: ${session.payment_status}`,
+        },
+        { status: 400 },
+      )
+    }
 
     // In a real application, you would:
-    // 1. Verify the payment status
-    // 2. Update the user's subscription status in your database
-    // 3. Return the necessary information to the client
+    // 1. Update the user's subscription status in your database
+    // 2. Provision access to pro features
+    // 3. Send a welcome/confirmation email
 
     return NextResponse.json({
       success: true,
       planType: session.metadata?.planType || "unknown",
       customerEmail: session.customer_details?.email,
+      subscriptionId: session.subscription || null,
+      paymentIntentId: session.payment_intent || null,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error verifying payment:", error)
-    return NextResponse.json({ error: "Error verifying payment" }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: "Error verifying payment",
+        details: error.message,
+      },
+      { status: 500 },
+    )
   }
 }
