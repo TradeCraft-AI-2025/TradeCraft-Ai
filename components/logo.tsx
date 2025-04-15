@@ -62,7 +62,7 @@ export function Logo({ variant = "default", animated = true, className = "" }: L
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className={`font-bold ${currentSize.text} tracking-wider`}
+        className={`font-serif ${currentSize.text} tracking-tight`}
       >
         <span className="text-foreground">Trade</span>
         <span className="text-[#5EEAD4]">Craft</span>

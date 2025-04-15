@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   signup: (email: string, password: string, name?: string) => Promise<void>
+  updateUserProfile: (profileData: any) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -100,6 +101,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function updateUserProfile(profileData: any) {
+    if (!user) return
+
+    // In a real app, this would call an API endpoint
+    // For now, we'll just update the local state
+    setUser({
+      ...user,
+      ...profileData,
+    })
+
+    // Store in localStorage for demo purposes
+    localStorage.setItem(
+      "user-profile",
+      JSON.stringify({
+        ...user,
+        ...profileData,
+      }),
+    )
+
+    return Promise.resolve()
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -110,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         signup,
+        updateUserProfile,
       }}
     >
       {children}

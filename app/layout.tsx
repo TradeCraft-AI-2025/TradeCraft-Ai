@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Mona_Sans as FontSans } from "next/font/google"
+import { Montserrat, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header"
@@ -8,9 +8,18 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/lib/auth-context"
 
-const fontSans = FontSans({
+// Primary font - Montserrat for modern, luxury feel
+const fontSans = Montserrat({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+})
+
+// Secondary font - Playfair Display for luxury accents
+const fontSerif = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -26,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontSerif.variable)}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
             <div className="relative flex min-h-screen flex-col bg-black">

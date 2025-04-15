@@ -23,6 +23,9 @@ export function PortfolioTable({ portfolio, isLoading }: PortfolioTableProps) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No holdings found in your portfolio.</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Add holdings manually or connect your brokerage account to get started.
+        </p>
       </div>
     )
   }

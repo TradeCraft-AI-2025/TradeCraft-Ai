@@ -25,10 +25,13 @@ export function SiteHeader() {
   const [isOpen, setIsOpen] = useState(false)
   const { isAuthenticated, user, isPro } = useAuth()
 
+  // Update the routes array to include the About page
   const routes = [
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/about", label: "About" },
     { href: "/pro", label: "Pro Tools" },
+    { href: "/account", label: "Account" },
   ]
 
   // Update the return statement to include authentication status

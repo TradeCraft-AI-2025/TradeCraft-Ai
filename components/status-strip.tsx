@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Wifi, Clock, BarChart2, Zap } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { LiveTickerPrice } from "@/components/live-ticker-price"
 
 export function StatusStrip() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -25,7 +26,7 @@ export function StatusStrip() {
 
   // Update time every second
   useEffect(() => {
-    const timer = setInterval(() => {
+    const interval = setInterval(() => {
       const now = new Date()
       setCurrentTime(now)
 
@@ -56,7 +57,7 @@ export function StatusStrip() {
       }
     }, 1000)
 
-    return () => clearInterval(timer)
+    return () => clearInterval(interval)
   }, [])
 
   // Simulate occasional connection status changes
@@ -126,7 +127,7 @@ export function StatusStrip() {
   const connectionStatusDisplay = getConnectionStatusDisplay()
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-md border-b border-white/10 shadow-sm h-8 px-4 flex items-center justify-between text-xs text-white/80">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-md border-b border-white/10 shadow-sm h-8 px-4 flex items-center justify-between text-xs text-white/80 font-sans">
       {/* Left: NY Time and Market Status */}
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-1">
@@ -172,10 +173,10 @@ export function StatusStrip() {
         <div className="flex items-center space-x-2">
           <BarChart2 className="h-3 w-3 text-[#5EEAD4]" />
           <Badge variant="outline" className="h-5 px-1 py-0 text-[10px] border-[#5EEAD4]/30 bg-[#5EEAD4]/5">
-            S&P 500 <span className="text-green-400 ml-1">+1.2%</span>
+            S&P 500 <LiveTickerPrice symbol="SPY" showChange={false} className="ml-1 text-[10px]" />
           </Badge>
           <Badge variant="outline" className="h-5 px-1 py-0 text-[10px] border-[#5EEAD4]/30 bg-[#5EEAD4]/5">
-            NASDAQ <span className="text-green-400 ml-1">+1.8%</span>
+            NASDAQ <LiveTickerPrice symbol="QQQ" showChange={false} className="ml-1 text-[10px]" />
           </Badge>
         </div>
 

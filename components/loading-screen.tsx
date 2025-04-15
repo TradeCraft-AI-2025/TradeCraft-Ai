@@ -16,13 +16,13 @@ export function LoadingScreen() {
         </motion.div>
 
         <motion.div
-          className="mt-8 relative h-2 w-48 bg-slate-800 rounded-full overflow-hidden"
+          className="mt-8 relative h-2 w-48 bg-black/50 rounded-full overflow-hidden border border-[#D4AF37]/20"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <motion.div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#5EEAD4] to-[#00FFFF]"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#5EEAD4] via-[#D4AF37] to-[#5EEAD4]"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
             transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 }}
@@ -30,7 +30,7 @@ export function LoadingScreen() {
         </motion.div>
 
         <motion.div
-          className="mt-4 text-[#5EEAD4] font-mono text-sm tracking-wider"
+          className="mt-4 font-serif text-[#D4AF37] text-sm tracking-wider"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}

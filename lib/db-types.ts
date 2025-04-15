@@ -2,6 +2,11 @@ export interface User {
   id: string
   email: string
   name?: string
+  title?: string
+  experience?: string
+  bio?: string
+  tradingStyle?: string
+  riskTolerance?: string
   subscriptionStatus: "none" | "active" | "lifetime" | "canceled" | "expired"
   subscriptionExpires?: Date
   stripeCustomerId?: string
