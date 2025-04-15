@@ -33,7 +33,7 @@ export function CustomTradingView({
   const scriptLoadedRef = useRef(false)
 
   useEffect(() => {
-    if (!containerRef.current) return
+    if (!containerRef.current || !symbol || symbol.trim() === "") return
 
     // Generate a unique ID for this chart
     const containerId = `tradingview_${Math.random().toString(36).substring(2, 15)}`
@@ -54,7 +54,7 @@ export function CustomTradingView({
     }
 
     function createWidget(id: string) {
-      if (!window.TradingView) return
+      if (!window.TradingView || !symbol || symbol.trim() === "") return
 
       // Define chart style based on chartType
       let chartStyle = 1 // Default: Candlestick

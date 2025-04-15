@@ -84,13 +84,11 @@ export function BrokerConnectionCard({
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 rounded-md bg-background/80 flex items-center justify-center">
-              <Image
-                src={icon && icon.length > 0 ? icon : "/placeholder.svg?height=32&width=32"}
-                alt={broker}
-                width={32}
-                height={32}
-                className="rounded-sm"
-              />
+              {icon ? (
+                <Image src={icon || "/placeholder.svg"} alt={broker} width={32} height={32} className="rounded-sm" />
+              ) : (
+                <Wallet className="h-6 w-6 text-muted-foreground" />
+              )}
             </div>
             <div>
               <CardTitle>{broker}</CardTitle>

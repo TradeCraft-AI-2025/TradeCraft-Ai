@@ -28,6 +28,12 @@ export function LiveTickerPrice({
     let retryCount = 0
     const maxRetries = 3
 
+    // Don't fetch if symbol is empty
+    if (!symbol || symbol.trim() === "") {
+      setIsLoading(false)
+      return
+    }
+
     const fetchQuote = async () => {
       try {
         setIsLoading(true)

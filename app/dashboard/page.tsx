@@ -18,6 +18,7 @@ import { ArrowRight, BarChart3, Wallet, LineChart, LayoutDashboard } from "lucid
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export default function DashboardPage() {
   const [currentTicker, setCurrentTicker] = useState("SPY")
@@ -110,6 +111,11 @@ export default function DashboardPage() {
               <div className="h-1.5 w-1.5 rounded-full bg-[#5EEAD4] mr-1.5 animate-pulse"></div>
               {connectedBroker ? `${connectedBroker} Connected` : "Live Data"}
             </Badge>
+
+            <Avatar>
+              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+              <AvatarFallback className="bg-slate-700 text-cyan-500">TC</AvatarFallback>
+            </Avatar>
           </div>
         </motion.div>
 
