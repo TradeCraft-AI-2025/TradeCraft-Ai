@@ -1,4 +1,4 @@
-// Replace the entire file with this new version that uses our server API
+// Client-side code that uses our server API endpoints instead of direct API calls
 
 export interface StockQuote {
   symbol: string
