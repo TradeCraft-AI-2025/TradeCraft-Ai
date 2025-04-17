@@ -101,7 +101,7 @@ export function LiveTickerPrice({
       isMounted = false
       clearInterval(intervalId)
     }
-  }, [symbol, refreshInterval, previousPrice])
+  }, [symbol, refreshInterval])
 
   if (isLoading && !quote) {
     return (
@@ -125,7 +125,7 @@ export function LiveTickerPrice({
         ${formatPrice(quote.price)}
       </span>
 
-      {showChange && (
+      {showChange && quote && (
         <div className="ml-2 flex items-center">
           {quote.changePercent >= 0 ? (
             <span className="text-green-400 flex items-center text-xs">
