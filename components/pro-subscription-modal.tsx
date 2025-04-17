@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
@@ -12,16 +13,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Check, CreditCard, Loader2 } from "lucide-react"
+import { Check, ArrowRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { loadStripe } from "@stripe/stripe-js"
-import { Input } from "@/components/ui/input"
 import { useAuth } from "@/lib/auth-context"
-import { useToast } from "@/components/ui/use-toast"
-import { createCheckoutSession } from "@/lib/stripe-client"
-
-// Initialize Stripe with your publishable key
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
 interface ProSubscriptionModalProps {
   open: boolean
@@ -32,72 +26,15 @@ type PlanType = "subscription" | "lifetime"
 
 export function ProSubscriptionModal({ open, onOpenChange }: ProSubscriptionModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("subscription")
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
+  const router = useRouter()
   const { user } = useAuth()
-  const { toast } = useToast()
 
-  // Pre-fill email if user is logged in
-  useState(() => {
-    if (user?.email) {
-      setEmail(user.email)
-    }
-  })
+  const handleContinue = () => {
+    // Close the modal
+    onOpenChange(false)
 
-  const handleCheckout = async () => {
-    if (!email) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address to continue.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Determine which price ID to use
-      const priceId =
-        selectedPlan === "subscription"
-          ? process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID
-          : process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
-
-      if (!priceId) {
-        throw new Error("Price ID is not defined in environment variables")
-      }
-
-      // Create checkout session
-      const { sessionId, url } = await createCheckoutSession(priceId, email)
-
-      // Handle redirect to Stripe checkout
-      if (url) {
-        // Prefer direct URL redirect if available (better for edge functions)
-        window.location.href = url
-      } else if (sessionId) {
-        // Fall back to client-side redirect
-        const stripe = await stripePromise
-        if (stripe) {
-          const { error } = await stripe.redirectToCheckout({ sessionId })
-          if (error) {
-            throw error
-          }
-        } else {
-          throw new Error("Failed to initialize Stripe")
-        }
-      } else {
-        throw new Error("No session ID or URL returned")
-      }
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error)
-      toast({
-        title: "Checkout error",
-        description: error.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    // Redirect to checkout page with selected plan
+    router.push(`/checkout?plan=${selectedPlan}${user?.email ? `&email=${encodeURIComponent(user.email)}` : ""}`)
   }
 
   return (
@@ -107,28 +44,10 @@ export function ProSubscriptionModal({ open, onOpenChange }: ProSubscriptionModa
           <DialogTitle className="text-xl text-white flex items-center">
             <span className="text-[#5EEAD4] mr-2">TradeCraft</span> AI Pro
           </DialogTitle>
-          <DialogDescription>
-            Choose your payment plan to unlock your personalized AI trading assistant
-          </DialogDescription>
+          <DialogDescription>Choose your plan to unlock your personalized AI trading assistant</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="bg-background/80 border-soft/20 text-white"
-              disabled={!!user?.email}
-            />
-            <p className="text-xs text-muted-foreground">
-              We'll send your receipt and subscription details to this email
-            </p>
-          </div>
-
           <RadioGroup
             value={selectedPlan}
             onValueChange={(value) => setSelectedPlan(value as PlanType)}
@@ -187,40 +106,14 @@ export function ProSubscriptionModal({ open, onOpenChange }: ProSubscriptionModa
                 <Check className="h-4 w-4 text-[#5EEAD4] mr-2" />
                 <span>Portfolio-specific insights and recommendations</span>
               </li>
-              <li className="flex items-center text-sm">
-                <Check className="h-4 w-4 text-[#5EEAD4] mr-2" />
-                <span>Priority customer support</span>
-              </li>
             </ul>
-          </div>
-
-          <div className="px-3 py-2 bg-[#5EEAD4]/10 rounded-md border border-[#5EEAD4]/20 text-xs text-slate-300">
-            <p className="font-semibold text-[#5EEAD4] mb-1">Test Mode</p>
-            <p>
-              Use test card number:{" "}
-              <span className="font-mono bg-black/30 px-1 py-0.5 rounded">4242 4242 4242 4242</span>
-            </p>
-            <p>Any future expiration date, any CVC, and any postal code.</p>
           </div>
         </div>
 
         <DialogFooter>
-          <Button
-            onClick={handleCheckout}
-            disabled={isLoading || !email}
-            className="w-full bg-[#FACC15] hover:bg-[#FACC15]/90 text-black"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CreditCard className="mr-2 h-4 w-4" />
-                Secure Checkout
-              </>
-            )}
+          <Button onClick={handleContinue} className="w-full bg-[#FACC15] hover:bg-[#FACC15]/90 text-black">
+            Continue to Checkout
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>

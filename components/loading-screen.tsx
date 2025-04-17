@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Logo } from "@/components/logo"
+import Image from "next/image"
 
 export function LoadingScreen() {
   return (
@@ -12,7 +12,7 @@ export function LoadingScreen() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <Logo variant="large" />
+          <Image src="/logo.png" alt="TradeCraft AI Logo" width={120} height={120} className="object-contain" />
         </motion.div>
 
         <motion.div

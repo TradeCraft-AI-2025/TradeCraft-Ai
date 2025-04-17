@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label"
 interface BrokerConnectionCardProps {
   broker: string
   description: string
-  icon: string
+  icon: string | null
   isConnected: boolean
   onConnectionChange: (isConnected: boolean) => void
 }
@@ -28,7 +28,7 @@ interface BrokerConnectionCardProps {
 export function BrokerConnectionCard({
   broker,
   description,
-  icon,
+  icon = null,
   isConnected,
   onConnectionChange,
 }: BrokerConnectionCardProps) {
@@ -78,17 +78,16 @@ export function BrokerConnectionCard({
     }, 2000)
   }
 
+  // Use a default placeholder if icon is empty or null
+  const iconSrc = icon || "/placeholder.svg"
+
   return (
     <>
       <Card className="bg-background/60 backdrop-blur border-muted">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 rounded-md bg-background/80 flex items-center justify-center">
-              {icon ? (
-                <Image src={icon || "/placeholder.svg"} alt={broker} width={32} height={32} className="rounded-sm" />
-              ) : (
-                <Wallet className="h-6 w-6 text-muted-foreground" />
-              )}
+              <Image src={iconSrc || "/placeholder.svg"} alt={broker} width={32} height={32} className="rounded-sm" />
             </div>
             <div>
               <CardTitle>{broker}</CardTitle>

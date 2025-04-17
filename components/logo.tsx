@@ -8,16 +8,20 @@ interface LogoProps {
   variant?: "default" | "small" | "large"
   animated?: boolean
   className?: string
+  src?: string | null
 }
 
-export function Logo({ variant = "default", animated = true, className = "" }: LogoProps) {
+export function Logo({ variant = "default", animated = true, className = "", src = null }: LogoProps) {
   const sizes = {
-    small: { container: "h-8", logo: 24, text: "text-lg" },
-    default: { container: "h-10", logo: 32, text: "text-xl" },
-    large: { container: "h-16", logo: 48, text: "text-3xl" },
+    small: { container: "h-8", logo: { width: 24, height: 24 }, text: "text-lg" },
+    default: { container: "h-10", logo: { width: 32, height: 32 }, text: "text-xl" },
+    large: { container: "h-16", logo: { width: 48, height: 48 }, text: "text-3xl" },
   }
 
   const currentSize = sizes[variant]
+
+  // Use the provided src or default to the logo.png
+  const logoSrc = src || "/logo.png"
 
   return (
     <Link href="/" className={`flex items-center space-x-2 ${className}`}>
@@ -29,10 +33,10 @@ export function Logo({ variant = "default", animated = true, className = "" }: L
           className="relative"
         >
           <Image
-            src="/logo-icon.png"
+            src={logoSrc || "/placeholder.svg"}
             alt="TradeCraft AI Logo"
-            width={currentSize.logo}
-            height={currentSize.logo}
+            width={currentSize.logo.width * 2}
+            height={currentSize.logo.height * 2}
             className="object-contain"
           />
           <motion.div
@@ -50,24 +54,13 @@ export function Logo({ variant = "default", animated = true, className = "" }: L
         </motion.div>
       ) : (
         <Image
-          src="/logo-icon.png"
+          src={logoSrc || "/placeholder.svg"}
           alt="TradeCraft AI Logo"
-          width={currentSize.logo}
-          height={currentSize.logo}
+          width={currentSize.logo.width * 2}
+          height={currentSize.logo.height * 2}
           className="object-contain"
         />
       )}
-
-      <motion.div
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className={`font-serif ${currentSize.text} tracking-tight`}
-      >
-        <span className="text-foreground">Trade</span>
-        <span className="text-[#5EEAD4]">Craft</span>
-        <span className="text-foreground ml-1">AI</span>
-      </motion.div>
     </Link>
   )
 }

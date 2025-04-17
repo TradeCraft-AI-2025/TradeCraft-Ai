@@ -17,7 +17,7 @@ interface LiveWatchlistProps {
 }
 
 export function LiveWatchlist({
-  initialSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"],
+  initialSymbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "SPY", "QQQ", "NVDA"],
   onSelectSymbol,
   selectedSymbol,
   className = "",
@@ -196,20 +196,18 @@ export function LiveWatchlist({
   }
 
   return (
-    <Card className={`premium-card rounded-xl h-full ${className}`}>
-      <CardHeader className="pb-2 border-b border-[#D4AF37]/20">
-        <CardTitle className="font-serif text-white flex items-center justify-between">
-          <span>My Watchlist</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-[#D4AF37] hover:text-[#D4AF37]/80 hover:bg-[#D4AF37]/10"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshIcon className="h-4 w-4" />}
-          </Button>
-        </CardTitle>
+    <Card className="h-full">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+        <CardTitle>Watchlist</CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshIcon className="h-4 w-4" />}
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="flex space-x-2 mb-4">
@@ -217,19 +215,18 @@ export function LiveWatchlist({
             placeholder="Add ticker (e.g. AAPL)"
             value={newTicker}
             onChange={(e) => setNewTicker(e.target.value)}
-            className="premium-input"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleAddTicker()
               }
             }}
           />
-          <Button onClick={handleAddTicker} className="premium-button">
+          <Button onClick={handleAddTicker}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
-        <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+        <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
           {isLoading && watchlist.length > 0 && !Object.keys(quotes).length ? (
             // Loading skeletons
             Array(watchlist.length)
@@ -237,7 +234,7 @@ export function LiveWatchlist({
               .map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-3 rounded-md border border-[#D4AF37]/10 bg-black/40"
+                  className="flex items-center justify-between p-3 rounded-md border border-slate-700/50 bg-slate-800/50"
                 >
                   <div className="h-5 w-20 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
                   <div className="h-5 w-16 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
@@ -262,15 +259,15 @@ export function LiveWatchlist({
                       layout
                       className={`flex items-center justify-between p-3 rounded-md border ${
                         selectedSymbol === symbol
-                          ? "border-[#D4AF37]/50 bg-[#D4AF37]/10"
-                          : "border-[#D4AF37]/10 bg-black/40 hover:bg-black/60 hover:border-[#D4AF37]/20"
+                          ? "border-cyan-500/50 bg-cyan-500/10"
+                          : "border-slate-700/50 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-600/50"
                       } cursor-pointer transition-all duration-200`}
                       onClick={() => onSelectSymbol && onSelectSymbol(symbol)}
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                     >
                       <div className="flex items-center">
-                        <span className="ticker-symbol font-medium text-white">{symbol}</span>
+                        <span className="ticker-symbol font-medium">{symbol}</span>
                       </div>
 
                       {quote ? (
@@ -279,7 +276,7 @@ export function LiveWatchlist({
                             quote.changePercent >= 0 ? "text-green-400" : "text-red-400"
                           }`}
                         >
-                          <span className="mr-2 font-serif">${formatPrice(quote.price)}</span>
+                          <span className="mr-2">${formatPrice(quote.price)}</span>
                           {quote.changePercent >= 0 ? (
                             <ArrowUp className="h-3 w-3 mr-1" />
                           ) : (

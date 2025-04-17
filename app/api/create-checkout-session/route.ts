@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       line_items: lineItems,
       mode: planType === "subscription" ? "subscription" : "payment",
       success_url: `${domain}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${domain}/pro`,
+      cancel_url: `${domain}/checkout?plan=${planType}&email=${encodeURIComponent(email)}`,
       customer_email: email,
       metadata: {
         planType,

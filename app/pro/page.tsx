@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +12,15 @@ import { ProSubscriptionModal } from "@/components/pro-subscription-modal"
 
 export default function ProToolsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const router = useRouter()
+
+  const handleUpgradeClick = () => {
+    // Option 1: Open the modal first
+    setIsModalOpen(true)
+
+    // Option 2: Go directly to checkout page
+    // router.push('/checkout')
+  }
 
   return (
     <div className="container py-8">
@@ -118,14 +128,22 @@ export default function ProToolsPage() {
             Finance AI that adapts to your portfolio, backtesting strategies, and experience level. Take your trading to
             the next level with TradeCraft AI Pro.
           </p>
-          <Button
-            size="lg"
-            className="bg-[#FACC15] hover:bg-[#FACC15]/90 text-black"
-            onClick={() => setIsModalOpen(true)}
-          >
-            Unlock Your AI Assistant
-            <Lock className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button size="lg" className="bg-[#FACC15] hover:bg-[#FACC15]/90 text-black" onClick={handleUpgradeClick}>
+              Unlock Your AI Assistant
+              <Lock className="ml-2 h-4 w-4" />
+            </Button>
+            <Link href="/checkout">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-[#5EEAD4]/30 hover:border-[#5EEAD4]/50 hover:bg-[#5EEAD4]/10"
+              >
+                View Pricing Details
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </motion.div>
 

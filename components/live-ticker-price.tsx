@@ -43,7 +43,7 @@ export function LiveTickerPrice({
 
         if (data) {
           // If we have a previous price, determine flash direction
-          if (previousPrice !== null) {
+          if (previousPrice !== null && data.price !== previousPrice) {
             if (data.price > previousPrice) {
               setFlashDirection("up")
             } else if (data.price < previousPrice) {
@@ -106,7 +106,7 @@ export function LiveTickerPrice({
   if (isLoading && !quote) {
     return (
       <div className={`inline-flex items-center ${className}`}>
-        <div className="h-5 w-16 bg-gradient-to-r from-slate-700 to-slate-600 animate-shimmer rounded"></div>
+        <div className="h-5 w-16 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
       </div>
     )
   }
@@ -127,7 +127,7 @@ export function LiveTickerPrice({
 
       {showChange && (
         <div className="ml-2 flex items-center">
-          {quote.change >= 0 ? (
+          {quote.changePercent >= 0 ? (
             <span className="text-green-400 flex items-center text-xs">
               <ArrowUp className="h-3 w-3 mr-0.5" />
               {quote.changePercent.toFixed(2)}%
