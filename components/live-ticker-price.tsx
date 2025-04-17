@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { ArrowUp, ArrowDown } from "lucide-react"
-import { getStockQuote, formatPrice, type StockQuote } from "@/lib/market-data"
+import { getStockQuote, formatPrice } from "@/lib/market-data"
 
 interface LiveTickerPriceProps {
   symbol: string
@@ -17,16 +17,14 @@ export function LiveTickerPrice({
   className = "",
   refreshInterval = 60000, // default 1 minute
 }: LiveTickerPriceProps) {
-  const [quote, setQuote] = useState<StockQuote | null>(null)
+  const [price, setPrice] = useState<number | null>(null)
+  const [changePercent, setChangePercent] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [flashDirection, setFlashDirection] = useState<"up" | "down" | null>(null)
   const [previousPrice, setPreviousPrice] = useState<number | null>(null)
 
   useEffect(() => {
     let isMounted = true
-    let retryCount = 0
-    const maxRetries = 3
 
     // Don't fetch if symbol is empty
     if (!symbol || symbol.trim() === "") {
@@ -57,35 +55,11 @@ export function LiveTickerPrice({
           }
 
           setPreviousPrice(data.price)
-          setQuote(data)
-          setError(null)
-          retryCount = 0 // Reset retry count on success
-        } else {
-          console.warn(`No data returned for symbol ${symbol}`)
-
-          // Retry logic
-          if (retryCount < maxRetries) {
-            retryCount++
-            console.log(`Retrying (${retryCount}/${maxRetries})...`)
-            setTimeout(fetchQuote, 1000) // Retry after 1 second
-            return
-          }
-
-          setError("Unable to fetch price")
+          setPrice(data.price)
+          setChangePercent(data.changePercent)
         }
       } catch (err) {
-        if (!isMounted) return
         console.error(`Error fetching stock quote for ${symbol}:`, err)
-
-        // Retry logic
-        if (retryCount < maxRetries) {
-          retryCount++
-          console.log(`Retrying (${retryCount}/${maxRetries})...`)
-          setTimeout(fetchQuote, 1000) // Retry after 1 second
-          return
-        }
-
-        setError("Error fetching price")
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -101,9 +75,9 @@ export function LiveTickerPrice({
       isMounted = false
       clearInterval(intervalId)
     }
-  }, [symbol, refreshInterval])
+  }, [symbol, refreshInterval, previousPrice])
 
-  if (isLoading && !quote) {
+  if (isLoading && price === null) {
     return (
       <div className={`inline-flex items-center ${className}`}>
         <div className="h-5 w-16 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
@@ -111,7 +85,7 @@ export function LiveTickerPrice({
     )
   }
 
-  if (error || !quote) {
+  if (price === null) {
     return <span className={`text-slate-400 ${className}`}>--</span>
   }
 
@@ -122,20 +96,20 @@ export function LiveTickerPrice({
           flashDirection === "up" ? "text-green-400" : flashDirection === "down" ? "text-red-400" : ""
         }`}
       >
-        ${formatPrice(quote.price)}
+        ${formatPrice(price)}
       </span>
 
-      {showChange && quote && (
+      {showChange && changePercent !== null && (
         <div className="ml-2 flex items-center">
-          {quote.changePercent >= 0 ? (
+          {changePercent >= 0 ? (
             <span className="text-green-400 flex items-center text-xs">
               <ArrowUp className="h-3 w-3 mr-0.5" />
-              {quote.changePercent.toFixed(2)}%
+              {changePercent.toFixed(2)}%
             </span>
           ) : (
             <span className="text-red-400 flex items-center text-xs">
               <ArrowDown className="h-3 w-3 mr-0.5" />
-              {Math.abs(quote.changePercent).toFixed(2)}%
+              {Math.abs(changePercent).toFixed(2)}%
             </span>
           )}
         </div>
