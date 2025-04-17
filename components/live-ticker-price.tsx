@@ -101,7 +101,7 @@ export function LiveTickerPrice({
       isMounted = false
       clearInterval(intervalId)
     }
-  }, [symbol, refreshInterval])
+  }, [symbol, refreshInterval, previousPrice])
 
   if (isLoading && !quote) {
     return (

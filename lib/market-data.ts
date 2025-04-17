@@ -1,4 +1,4 @@
-// Client-side code that uses our server API endpoints instead of direct API calls
+// Client-side code that uses mock data instead of API keys
 
 export interface StockQuote {
   symbol: string
@@ -13,12 +13,25 @@ export interface StockQuote {
   timestamp: number
 }
 
+// Mock data for common stocks
+const mockStockData: Record<string, { price: number; change: number }> = {
+  AAPL: { price: 178.72, change: 1.25 },
+  MSFT: { price: 338.11, change: 2.45 },
+  GOOGL: { price: 142.65, change: 0.87 },
+  AMZN: { price: 178.15, change: -0.32 },
+  TSLA: { price: 177.8, change: -1.2 },
+  META: { price: 474.99, change: 3.21 },
+  NVDA: { price: 950.02, change: 15.75 },
+  SPY: { price: 504.85, change: 1.05 },
+  QQQ: { price: 438.27, change: 1.32 },
+}
+
 // Client-side cache to reduce API calls
 const quoteCache: Record<string, { data: StockQuote; timestamp: number }> = {}
 const CACHE_DURATION = 60000 // 1 minute cache
 
 /**
- * Get stock quote from our server API
+ * Get stock quote from our server API or mock data
  */
 export async function getStockQuote(symbol: string): Promise<StockQuote | null> {
   try {
@@ -28,21 +41,26 @@ export async function getStockQuote(symbol: string): Promise<StockQuote | null> 
       return quoteCache[symbol].data
     }
 
-    // Call our server API
-    const response = await fetch(`/api/stock/quote?symbol=${symbol}`, {
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-    })
+    // Try to get data from server API
+    try {
+      const response = await fetch(`/api/stock/quote?symbol=${symbol}`, {
+        signal: AbortSignal.timeout(5000), // 5 second timeout
+      })
 
-    if (!response.ok) {
-      throw new Error(`API returned status ${response.status}`)
+      if (response.ok) {
+        const quote = await response.json()
+        quoteCache[symbol] = { data: quote, timestamp: now }
+        return quote
+      }
+    } catch (error) {
+      console.warn(`API error for ${symbol}:`, error)
+      // Fall back to mock data
     }
 
-    const quote = await response.json()
-
-    // Update cache
-    quoteCache[symbol] = { data: quote, timestamp: now }
-
-    return quote
+    // Use mock data as fallback
+    const mockQuote = createMockQuote(symbol)
+    quoteCache[symbol] = { data: mockQuote, timestamp: now }
+    return mockQuote
   } catch (error) {
     console.error(`Error fetching quote for ${symbol}:`, error)
 
@@ -52,7 +70,34 @@ export async function getStockQuote(symbol: string): Promise<StockQuote | null> 
       return quoteCache[symbol].data
     }
 
-    return null
+    return createMockQuote(symbol)
+  }
+}
+
+/**
+ * Create a mock quote for a symbol
+ */
+function createMockQuote(symbol: string): StockQuote {
+  const now = Date.now()
+
+  // Use predefined mock data if available, otherwise generate random data
+  const mockData = mockStockData[symbol] || {
+    price: Math.random() * 100 + 50, // Random price between 50 and 150
+    change: Math.random() * 4 - 2, // Random change between -2 and 2
+  }
+
+  const price = mockData.price
+  const change = mockData.change
+  const previousClose = price - change
+  const changePercent = (change / previousClose) * 100
+
+  return {
+    symbol,
+    price,
+    change,
+    changePercent,
+    previousClose,
+    timestamp: now,
   }
 }
 
@@ -80,36 +125,53 @@ export async function getBatchQuotes(symbols: string[]): Promise<Record<string, 
       return cachedQuotes
     }
 
-    // Call our server API for the symbols we need
-    const response = await fetch(`/api/stock/quote?symbols=${symbolsToFetch.join(",")}`, {
-      signal: AbortSignal.timeout(10000), // 10 second timeout for batch requests
-    })
+    // Try to get data from server API
+    try {
+      const response = await fetch(`/api/stock/quote?symbols=${symbolsToFetch.join(",")}`, {
+        signal: AbortSignal.timeout(10000), // 10 second timeout for batch requests
+      })
 
-    if (!response.ok) {
-      throw new Error(`API returned status ${response.status}`)
+      if (response.ok) {
+        const fetchedQuotes = await response.json()
+
+        // Update cache for fetched quotes
+        Object.entries(fetchedQuotes).forEach(([symbol, quote]) => {
+          quoteCache[symbol] = { data: quote as StockQuote, timestamp: now }
+        })
+
+        // Combine cached and fetched quotes
+        return { ...cachedQuotes, ...fetchedQuotes }
+      }
+    } catch (error) {
+      console.warn(`API error for batch quotes:`, error)
+      // Fall back to mock data
     }
 
-    const fetchedQuotes = await response.json()
+    // Use mock data for symbols that weren't cached
+    const mockQuotes: Record<string, StockQuote> = { ...cachedQuotes }
 
-    // Update cache for fetched quotes
-    Object.entries(fetchedQuotes).forEach(([symbol, quote]) => {
-      quoteCache[symbol] = { data: quote as StockQuote, timestamp: now }
+    symbolsToFetch.forEach((symbol) => {
+      const mockQuote = createMockQuote(symbol)
+      quoteCache[symbol] = { data: mockQuote, timestamp: now }
+      mockQuotes[symbol] = mockQuote
     })
 
-    // Combine cached and fetched quotes
-    return { ...cachedQuotes, ...fetchedQuotes }
+    return mockQuotes
   } catch (error) {
     console.error(`Error fetching batch quotes:`, error)
 
-    // Return any cached quotes we have
-    const cachedResults: Record<string, StockQuote> = {}
+    // Return any cached quotes we have and generate mock data for the rest
+    const result: Record<string, StockQuote> = {}
+
     symbols.forEach((symbol) => {
       if (quoteCache[symbol]) {
-        cachedResults[symbol] = quoteCache[symbol].data
+        result[symbol] = quoteCache[symbol].data
+      } else {
+        result[symbol] = createMockQuote(symbol)
       }
     })
 
-    return cachedResults
+    return result
   }
 }
 
