@@ -38,11 +38,8 @@ export default function DashboardPage() {
             {/* Portfolio summary */}
             <PortfolioSummary />
 
-            {/* Live watchlist */}
-            <LiveWatchlist
-              initialSymbols={["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"]}
-              onSelectSymbol={(symbol) => console.log(`Selected: ${symbol}`)}
-            />
+            {/* Live watchlist - with no event handlers */}
+            <LiveWatchlist initialSymbols={["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"]} />
           </div>
         </div>
       </main>

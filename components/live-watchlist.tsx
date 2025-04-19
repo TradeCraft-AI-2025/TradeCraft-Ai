@@ -163,6 +163,13 @@ export function LiveWatchlist({
     }
   }
 
+  // Handle ticker selection with optional callback
+  const handleSelectTicker = (symbol: string) => {
+    if (onSelectSymbol) {
+      onSelectSymbol(symbol)
+    }
+  }
+
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -262,7 +269,7 @@ export function LiveWatchlist({
                           ? "border-cyan-500/50 bg-cyan-500/10"
                           : "border-slate-700/50 bg-slate-800/50 hover:bg-slate-800 hover:border-slate-600/50"
                       } cursor-pointer transition-all duration-200`}
-                      onClick={() => onSelectSymbol && onSelectSymbol(symbol)}
+                      onClick={() => handleSelectTicker(symbol)}
                       whileHover={{ scale: 1.01 }}
                       whileTap={{ scale: 0.99 }}
                     >
