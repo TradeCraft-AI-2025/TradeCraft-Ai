@@ -1,97 +1,87 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
-// Initialize Stripe with your secret key
+// Debug environment variables
+console.log({
+  STRIPE_SECRET_KEY: !!process.env.STRIPE_SECRET_KEY,
+  priceMonthly: process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID,
+  base: process.env.NEXT_PUBLIC_BASE_URL,
+})
+
+// Initialize Stripe with the secret key from environment variables
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 })
 
 export async function POST(request: Request) {
-  // Debug environment variables
-  console.log({
-    key: process.env.STRIPE_SECRET_KEY,
-    priceId: process.env.TEST_STRIPE_SUBSCRIPTION_PRICE_ID,
-    base: process.env.NEXT_PUBLIC_BASE_URL,
-  })
-
   try {
-    const { planType, email } = await request.json()
+    // Parse the request body to get plan and email
+    const { plan, email } = await request.json()
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 })
+    // Validate required fields
+    if (!plan || !email) {
+      return NextResponse.json({ error: "Missing required fields: plan and email are required" }, { status: 400 })
     }
 
-    // For test mode, we'll log what's happening
-    console.log(`Creating checkout session for ${email} with plan type: ${planType}`)
+    // Log the request for debugging
+    console.log(`Creating checkout session for plan: ${plan}, email: ${email}`)
 
-    // Get the price IDs from the test environment variables
-    const subscriptionPriceId = process.env.TEST_STRIPE_SUBSCRIPTION_PRICE_ID
-    const lifetimePriceId = process.env.TEST_STRIPE_LIFETIME_SUBSCRIPTION_PRICE_ID
+    // Determine the price ID based on the plan type
+    let priceId: string | undefined
+    let mode: "subscription" | "payment"
 
-    console.log(`Using environment variables:
-      - DOMAIN: ${process.env.DOMAIN}
-      - TEST_STRIPE_SUBSCRIPTION_PRICE_ID: ${subscriptionPriceId}
-      - TEST_STRIPE_LIFETIME_SUBSCRIPTION_PRICE_ID: ${lifetimePriceId}
-    `)
-
-    // Validate that we have the required price IDs
-    if (!subscriptionPriceId || !lifetimePriceId) {
-      console.error("Missing required Stripe price IDs in environment variables")
-      return NextResponse.json({ error: "Server configuration error: Missing Stripe price IDs" }, { status: 500 })
-    }
-
-    // Set up the line items based on the selected plan
-    const lineItems = []
-
-    if (planType === "subscription") {
-      // For subscription, use the test subscription price ID
-      lineItems.push({
-        price: subscriptionPriceId,
-        quantity: 1,
-      })
-    } else if (planType === "lifetime") {
-      // For one-time payment, use the test lifetime price ID
-      lineItems.push({
-        price: lifetimePriceId,
-        quantity: 1,
-      })
+    if (plan === "subscription") {
+      priceId = process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID
+      mode = "subscription"
+    } else if (plan === "lifetime") {
+      priceId = process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
+      mode = "payment"
     } else {
-      return NextResponse.json({ error: "Invalid plan type" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid plan type. Must be 'subscription' or 'lifetime'" }, { status: 400 })
     }
 
-    // Ensure domain is properly set for redirects
-    const domain =
-      process.env.DOMAIN ||
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.NEXT_PUBLIC_VERCEL_URL
-        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-        : process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : "http://localhost:3000")
+    // Validate that we have a price ID
+    if (!priceId) {
+      console.error(`Missing price ID for plan: ${plan}`)
+      return NextResponse.json({ error: "Server configuration error: Missing price ID" }, { status: 500 })
+    }
 
-    // Create the checkout session with proper configuration
+    // Determine the domain for success and cancel URLs
+    const domain =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      process.env.DOMAIN ||
+      (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "http://localhost:3000")
+
+    // Create the checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
-      line_items: lineItems,
-      mode: planType === "subscription" ? "subscription" : "payment",
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode,
       success_url: `${domain}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${domain}/pricing?canceled=true`,
       customer_email: email,
       metadata: {
-        planType,
+        plan,
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-      // Use test clock for testing subscriptions if needed
-      // test_clock: test_clock_id, // Only if you're using test clocks
     })
 
-    return NextResponse.json({ sessionId: session.id, url: session.url })
+    // Return the checkout session URL
+    return NextResponse.json({ url: session.url })
   } catch (error: any) {
+    // Log the error for debugging
     console.error("Error creating checkout session:", error)
+
+    // Return an error response
     return NextResponse.json(
       {
-        error: "Error creating checkout session",
+        error: "Failed to create checkout session",
         details: error.message || "Unknown error",
       },
       { status: 500 },
