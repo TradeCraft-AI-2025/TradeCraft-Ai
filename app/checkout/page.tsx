@@ -53,18 +53,8 @@ export default function CheckoutPage() {
     setIsLoading(true)
 
     try {
-      // Determine which price ID to use
-      const priceId =
-        selectedPlan === "subscription"
-          ? process.env.NEXT_PUBLIC_STRIPE_SUBSCRIPTION_PRICE_ID
-          : process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID
-
-      if (!priceId) {
-        throw new Error("Price ID is not defined in environment variables")
-      }
-
-      // Create checkout session
-      const { sessionId, url } = await createCheckoutSession(priceId, email)
+      // Create checkout session with the plan type instead of trying to use the price ID directly
+      const { sessionId, url } = await createCheckoutSession(selectedPlan, email)
 
       // Handle redirect to Stripe checkout
       if (url) {

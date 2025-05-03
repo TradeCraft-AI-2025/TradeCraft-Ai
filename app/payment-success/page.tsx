@@ -7,6 +7,8 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, ArrowRight, Loader2 } from "lucide-react"
+import { trackConversion } from "@/lib/analytics"
+import { trackEvent } from "@/lib/analytics"
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
@@ -14,6 +16,7 @@ export default function PaymentSuccessPage() {
   const [paymentDetails, setPaymentDetails] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [conversionTracked, setConversionTracked] = useState(false)
 
   useEffect(() => {
     async function fetchPaymentDetails() {
@@ -33,6 +36,19 @@ export default function PaymentSuccessPage() {
 
         const data = await response.json()
         setPaymentDetails(data)
+
+        // Track successful conversion only once when payment details are loaded
+        if (!conversionTracked && data) {
+          trackConversion({
+            type: "purchase",
+            planType: data.planType,
+            amount: data.amount || 0,
+            currency: data.currency || "USD",
+            isNewCustomer: data.isNewCustomer,
+            sessionId: sessionId,
+          })
+          setConversionTracked(true)
+        }
       } catch (error: any) {
         console.error("Error fetching payment details:", error)
         setError(error.message || "Error verifying payment")
@@ -42,7 +58,7 @@ export default function PaymentSuccessPage() {
     }
 
     fetchPaymentDetails()
-  }, [sessionId])
+  }, [sessionId, conversionTracked])
 
   return (
     <div className="container py-12 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -98,13 +114,20 @@ export default function PaymentSuccessPage() {
 
               <div className="space-y-4">
                 <Link href="/dashboard">
-                  <Button className="w-full bg-[#5EEAD4] hover:bg-[#5EEAD4]/80 text-black">
+                  <Button
+                    className="w-full bg-[#5EEAD4] hover:bg-[#5EEAD4]/80 text-black"
+                    onClick={() => trackEvent("post_purchase_navigation", { destination: "dashboard" })}
+                  >
                     Go to Dashboard
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/pro/backtest">
-                  <Button variant="outline" className="w-full border-[#5EEAD4]/30 hover:bg-[#5EEAD4]/10">
+                  <Button
+                    variant="outline"
+                    className="w-full border-[#5EEAD4]/30 hover:bg-[#5EEAD4]/10"
+                    onClick={() => trackEvent("post_purchase_navigation", { destination: "backtest" })}
+                  >
                     Try Backtesting Tool
                   </Button>
                 </Link>

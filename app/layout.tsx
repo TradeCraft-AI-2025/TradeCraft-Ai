@@ -4,6 +4,7 @@ import { Montserrat, Playfair_Display } from "next/font/google"
 import "./globals.css"
 import { cn } from "@/lib/utils"
 import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/lib/auth-context"
@@ -42,6 +43,7 @@ export default function RootLayout({
               <div className="h-8"></div> {/* Add space for the status strip */}
               <SiteHeader />
               <div className="relative flex-1 z-10">{children}</div>
+              <SiteFooter />
               <Toaster />
             </div>
           </AuthProvider>

@@ -1,7 +1,7 @@
 // This is a placeholder file for the actual Stripe integration
 // In a real implementation, you would use the Stripe SDK
 
-export async function createCheckoutSession(priceId: string, userEmail: string) {
+export async function createCheckoutSession(planType: string, userEmail: string) {
   try {
     // Call our backend API to create a Stripe Checkout session
     const response = await fetch("/api/create-checkout-session", {
@@ -10,7 +10,7 @@ export async function createCheckoutSession(priceId: string, userEmail: string) 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        planType: priceId === process.env.NEXT_PUBLIC_STRIPE_LIFETIME_PRICE_ID ? "lifetime" : "subscription",
+        planType: planType, // Just pass the plan type (subscription or lifetime)
         email: userEmail,
       }),
     })

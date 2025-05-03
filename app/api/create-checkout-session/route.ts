@@ -6,6 +6,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 })
 
+// Define default test price IDs to use when the environment variables are not set
+const DEFAULT_TEST_SUBSCRIPTION_PRICE_ID = "price_1OqXXXXXXXXXXXXXXXXXXXXX" // Replace with a valid test price ID
+const DEFAULT_TEST_LIFETIME_PRICE_ID = "price_1OqYYYYYYYYYYYYYYYYYYYYY" // Replace with a valid test price ID
+
 export async function POST(request: Request) {
   try {
     const { planType, email } = await request.json()
@@ -16,25 +20,30 @@ export async function POST(request: Request) {
 
     // For test mode, we'll log what's happening
     console.log(`Creating checkout session for ${email} with plan type: ${planType}`)
+
+    // Get the price IDs from environment variables or use defaults for testing
+    const subscriptionPriceId = process.env.STRIPE_SUBSCRIPTION_PRICE_ID || DEFAULT_TEST_SUBSCRIPTION_PRICE_ID
+    const lifetimePriceId = process.env.STRIPE_LIFETIME_PRICE_ID || DEFAULT_TEST_LIFETIME_PRICE_ID
+
     console.log(`Using environment variables:
       - DOMAIN: ${process.env.DOMAIN}
-      - STRIPE_SUBSCRIPTION_PRICE_ID: ${process.env.STRIPE_SUBSCRIPTION_PRICE_ID}
-      - STRIPE_LIFETIME_PRICE_ID: ${process.env.STRIPE_LIFETIME_PRICE_ID}
+      - STRIPE_SUBSCRIPTION_PRICE_ID: ${subscriptionPriceId}
+      - STRIPE_LIFETIME_PRICE_ID: ${lifetimePriceId}
     `)
 
     // Set up the line items based on the selected plan
     const lineItems = []
 
     if (planType === "subscription") {
-      // For subscription, use the price ID from your Stripe dashboard
+      // For subscription, use the price ID from your Stripe dashboard or the default test ID
       lineItems.push({
-        price: process.env.STRIPE_SUBSCRIPTION_PRICE_ID,
+        price: subscriptionPriceId,
         quantity: 1,
       })
     } else if (planType === "lifetime") {
       // For one-time payment
       lineItems.push({
-        price: process.env.STRIPE_LIFETIME_PRICE_ID,
+        price: lifetimePriceId,
         quantity: 1,
       })
     }
@@ -59,8 +68,6 @@ export async function POST(request: Request) {
       metadata: {
         planType,
       },
-      // Use test clock for testing subscriptions if needed
-      // test_clock: test_clock_id, // Only if you're using test clocks
     })
 
     return NextResponse.json({ sessionId: session.id, url: session.url })

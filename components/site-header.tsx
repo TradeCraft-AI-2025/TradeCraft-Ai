@@ -1,13 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronRight, Menu, LogOut, User, LayoutDashboard, Shield, Zap } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Logo } from "@/components/logo"
+import { ThemeToggle } from "@/components/theme-toggle"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,24 +23,44 @@ import { Badge } from "@/components/ui/badge"
 
 export function SiteHeader() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const { isAuthenticated, user, isPro } = useAuth()
 
-  // Update the routes array to include the About page
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled)
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [scrolled])
+
+  // Update the routes array to include all required pages
   const routes = [
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/pricing", label: "Pricing" },
     { href: "/about", label: "About" },
-    { href: "/pro", label: "Pro Tools" },
-    { href: "/account", label: "Account" },
   ]
 
-  // Update the return statement to include authentication status
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+    <header
+      className={cn(
+        "sticky top-0 z-40 w-full transition-all duration-300",
+        scrolled
+          ? "border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+          : "bg-background",
+      )}
+    >
+      <div className="container flex h-16 items-center px-4 sm:px-6">
         <div className="mr-4 hidden md:flex">
-          <Logo className="mr-6" />
+          <Logo className={cn("mr-6 transition-all duration-300", scrolled ? "scale-90" : "scale-100")} />
           <nav className="flex items-center space-x-6 text-sm font-medium">
             {routes.map((route) => (
               <Link
@@ -59,7 +80,7 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             {/* Mobile logo and menu */}
-            <div className="flex items-center md:hidden">
+            <div className="flex items-center justify-between md:hidden">
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="mr-2" aria-label="Menu">
@@ -85,14 +106,23 @@ export function SiteHeader() {
                       </Link>
                     ))}
                   </nav>
+                  <div className="mt-6 flex items-center">
+                    <ThemeToggle />
+                    <span className="ml-2 text-sm font-medium">Theme</span>
+                  </div>
                 </SheetContent>
               </Sheet>
 
-              <Logo variant="small" className="md:hidden" />
+              <Logo
+                variant="small"
+                className={cn("transition-all duration-300", scrolled ? "scale-90" : "scale-100")}
+              />
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -108,9 +138,9 @@ export function SiteHeader() {
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-black/80 backdrop-blur-md border-white/10">
+                <DropdownMenuContent align="end" className="w-56 border-border">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator />
                   <Link href="/account">
                     <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
                       <User className="h-4 w-4 mr-2" />
@@ -138,7 +168,7 @@ export function SiteHeader() {
                       </DropdownMenuItem>
                     </Link>
                   )}
-                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer hover:bg-red-500/10 focus:bg-red-500/10"
                     onClick={async () => {
