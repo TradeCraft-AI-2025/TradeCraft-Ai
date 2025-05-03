@@ -1,27 +1,14 @@
+import { initiateCheckout } from "./checkout"
+
 // This is a placeholder file for the actual Stripe integration
 // In a real implementation, you would use the Stripe SDK
 
 export async function createCheckoutSession(planType: string, userEmail: string) {
   try {
-    // Call our backend API to create a Stripe Checkout session
-    const response = await fetch("/api/create-checkout-session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        planType: planType, // Just pass the plan type (subscription or lifetime)
-        email: userEmail,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || "Error creating checkout session")
-    }
-
-    const data = await response.json()
-    return data
+    // Use our checkout utility to create a session and redirect
+    await initiateCheckout(planType, userEmail)
+    // This will never be reached because of the redirect, but we need to return something
+    return { success: true }
   } catch (error) {
     console.error("Error creating checkout session:", error)
     throw error
