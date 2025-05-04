@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { SubscriptionStatus } from "@/components/subscription-status"
 
 export function SiteHeader() {
   const pathname = usePathname()
@@ -121,6 +122,7 @@ export function SiteHeader() {
           </div>
 
           <div className="flex items-center gap-2">
+            <SubscriptionStatus />
             <ThemeToggle />
 
             {isAuthenticated ? (

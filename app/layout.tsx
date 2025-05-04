@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/lib/auth-context"
+import { ProProvider } from "@/lib/pro-context"
 
 // Primary font - Montserrat for modern, luxury feel
 const fontSans = Montserrat({
@@ -39,13 +40,15 @@ export default function RootLayout({
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontSerif.variable)}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
           <AuthProvider>
-            <div className="relative flex min-h-screen flex-col bg-black">
-              <div className="h-8"></div> {/* Add space for the status strip */}
-              <SiteHeader />
-              <div className="relative flex-1 z-10">{children}</div>
-              <SiteFooter />
-              <Toaster />
-            </div>
+            <ProProvider>
+              <div className="relative flex min-h-screen flex-col bg-black">
+                <div className="h-8"></div> {/* Add space for the status strip */}
+                <SiteHeader />
+                <div className="relative flex-1 z-10">{children}</div>
+                <SiteFooter />
+                <Toaster />
+              </div>
+            </ProProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

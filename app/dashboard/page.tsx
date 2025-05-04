@@ -1,5 +1,8 @@
 "use client"
 
+import { useSearchParams, useRouter } from "next/navigation"
+import { useEffect } from "react"
+import { useToast } from "@/components/ui/use-toast"
 import { SiteHeader } from "@/components/site-header"
 import { StatusStrip } from "@/components/status-strip"
 import { LiveWatchlist } from "@/components/live-watchlist"
@@ -7,13 +10,42 @@ import { CustomTradingView } from "@/components/custom-trading-view"
 import { PortfolioSummary } from "@/components/portfolio-summary"
 import { RecentTransactions } from "@/components/recent-transactions"
 import { MarketNews } from "@/components/market-news"
-import { LockedFeature } from "@/components/locked-feature"
 import { Button } from "@/components/ui/button"
 import { Download, LineChart, Plus } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SimpleHelpModal } from "@/components/simple-help-modal"
+import { ProGuard } from "@/components/pro-guard"
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const { toast } = useToast()
+
+  // Check for success parameter on component mount
+  useEffect(() => {
+    const success = searchParams.get("success")
+
+    if (success === "true") {
+      // Show success toast
+      toast({
+        title: "🎉 Subscription activated!",
+        description: "Thank you for subscribing to TradeCraft AI Pro.",
+        variant: "default",
+        duration: 5000,
+      })
+
+      // Set subscribed flag in localStorage
+      try {
+        localStorage.setItem("subscribed", "true")
+      } catch (error) {
+        console.error("Error setting localStorage:", error)
+      }
+
+      // Remove the query parameter
+      router.replace("/dashboard")
+    }
+  }, [searchParams, router, toast])
+
   return (
     <div className="flex min-h-screen flex-col">
       <StatusStrip />
@@ -27,12 +59,12 @@ export default function DashboardPage() {
               <Plus className="h-4 w-4" />
               Add Ticker
             </Button>
-            <LockedFeature className="w-auto h-auto">
+            <ProGuard>
               <Button size="sm" variant="outline" className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Export Data
               </Button>
-            </LockedFeature>
+            </ProGuard>
           </div>
         </div>
 
@@ -45,10 +77,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Pro Feature: Backtester */}
-            <LockedFeature
-              title="AI Strategy Backtester"
-              description="Test your trading strategies against historical data with our advanced AI-powered backtesting tool"
-            >
+            <ProGuard>
               <Card className="border border-[#5EEAD4]/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -62,7 +91,7 @@ export default function DashboardPage() {
                   </div>
                 </CardContent>
               </Card>
-            </LockedFeature>
+            </ProGuard>
 
             {/* Market news and recent transactions in a 2-column layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -79,11 +108,17 @@ export default function DashboardPage() {
             {/* Live watchlist */}
             <LiveWatchlist initialSymbols={["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"]} />
 
-            {/* Upgrade to Pro button */}
+            {/* Upgrade to Pro button - only show if not Pro */}
             <div className="mt-4">
-              <Button className="w-full bg-gradient-to-r from-[#5EEAD4] to-[#FACC15] text-black font-medium" size="lg">
-                Upgrade to Pro
-              </Button>
+              <ProGuard invert>
+                <Button
+                  className="w-full bg-gradient-to-r from-[#5EEAD4] to-[#FACC15] text-black font-medium"
+                  size="lg"
+                  onClick={() => router.push("/pricing")}
+                >
+                  Upgrade to Pro
+                </Button>
+              </ProGuard>
             </div>
           </div>
         </div>

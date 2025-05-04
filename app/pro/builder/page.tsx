@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider"
 import { Download, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ProFeatureGuard } from "@/components/pro-feature-guard"
+import { ProGuard } from "@/components/pro-guard"
 
 export default function StrategyBuilderPage() {
   const [selectedIndicators, setSelectedIndicators] = useState({
@@ -47,7 +47,7 @@ export default function StrategyBuilderPage() {
   }
 
   return (
-    <ProFeatureGuard>
+    <ProGuard>
       <div className="container py-8">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
@@ -343,6 +343,6 @@ function onData(context, data) {
           </motion.div>
         </div>
       </div>
-    </ProFeatureGuard>
+    </ProGuard>
   )
 }

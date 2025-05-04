@@ -12,6 +12,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   signup: (email: string, password: string, name?: string) => Promise<void>
   updateUserProfile: (profileData: any) => Promise<void>
+  updateSubscriptionStatus: (isSubscribed: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -50,6 +51,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (user.subscriptionExpires && new Date(user.subscriptionExpires) > new Date())),
   )
 
+  // Sync subscription status with localStorage on mount and when isPro changes
+  useEffect(() => {
+    try {
+      // If user is logged in and has pro access, set localStorage
+      if (user && isPro) {
+        localStorage.setItem("subscribed", "true")
+      }
+
+      // If user is logged in but doesn't have pro access, check localStorage
+      // to see if we need to clear it (only if user is logged in to avoid clearing during loading)
+      else if (user && !isPro && localStorage.getItem("subscribed") === "true") {
+        // Only clear if we're sure the user doesn't have pro access
+        localStorage.removeItem("subscribed")
+      }
+    } catch (error) {
+      console.error("Error syncing subscription status:", error)
+    }
+  }, [user, isPro])
+
   // Auth functions
   async function login(email: string, password: string) {
     setIsLoading(true)
@@ -76,6 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await fetch("/api/auth/logout", { method: "POST" })
       setUser(null)
+      // Clear subscription status on logout
+      localStorage.removeItem("subscribed")
     } finally {
       setIsLoading(false)
     }
@@ -123,6 +145,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Promise.resolve()
   }
 
+  // Function to update subscription status
+  function updateSubscriptionStatus(isSubscribed: boolean) {
+    try {
+      if (isSubscribed) {
+        localStorage.setItem("subscribed", "true")
+      } else {
+        localStorage.removeItem("subscribed")
+      }
+
+      // If we have a user, update their subscription status
+      if (user) {
+        setUser({
+          ...user,
+          subscriptionStatus: isSubscribed ? "active" : "inactive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating subscription status:", error)
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -134,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         signup,
         updateUserProfile,
+        updateSubscriptionStatus,
       }}
     >
       {children}

@@ -47,12 +47,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Server configuration error: Missing price ID" }, { status: 500 })
     }
 
-    // Determine the domain for success and cancel URLs
-    const domain =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "http://localhost:3000")
+    // Validate that we have a base URL
+    if (!process.env.NEXT_PUBLIC_BASE_URL) {
+      console.error("Missing NEXT_PUBLIC_BASE_URL environment variable")
+      return NextResponse.json({ error: "Server configuration error: Missing base URL" }, { status: 500 })
+    }
 
-    // Create the checkout session
+    // Create the checkout session with updated success and cancel URLs
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -62,8 +63,8 @@ export async function POST(req: Request) {
         },
       ],
       mode,
-      success_url: `${domain}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${domain}/pricing?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
       customer_email: email,
       metadata: {
         plan,

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BarChart2, FileUp, TrendingUp } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { ProFeatureGuard } from "@/components/pro-feature-guard"
+import { ProGuard } from "@/components/pro-guard"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingSpinner } from "@/components/loading-spinner"
 
@@ -48,7 +48,7 @@ export default function BacktestPage() {
   }
 
   return (
-    <ProFeatureGuard>
+    <ProGuard>
       <div className="container py-8 relative">
         {isRunning && (
           <LoadingSpinner isLoading={isRunning} fullScreen={true} text={`Running backtest... ${progress}%`} />
@@ -196,6 +196,6 @@ export default function BacktestPage() {
           </motion.div>
         </div>
       </div>
-    </ProFeatureGuard>
+    </ProGuard>
   )
 }
