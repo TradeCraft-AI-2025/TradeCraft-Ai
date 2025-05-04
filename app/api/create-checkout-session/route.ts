@@ -8,6 +8,9 @@ console.log({
   base: process.env.NEXT_PUBLIC_BASE_URL,
 })
 
+// Create a baseUrl with fallback to VERCEL_URL for preview deployments
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
+
 // Initialize Stripe with the secret key from environment variables
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -48,8 +51,8 @@ export async function POST(req: Request) {
     }
 
     // Validate that we have a base URL
-    if (!process.env.NEXT_PUBLIC_BASE_URL) {
-      console.error("Missing NEXT_PUBLIC_BASE_URL environment variable")
+    if (!baseUrl) {
+      console.error("Missing both NEXT_PUBLIC_BASE_URL and VERCEL_URL environment variables")
       return NextResponse.json({ error: "Server configuration error: Missing base URL" }, { status: 500 })
     }
 
@@ -63,8 +66,8 @@ export async function POST(req: Request) {
         },
       ],
       mode,
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
+      success_url: `${baseUrl}/dashboard?success=true`,
+      cancel_url: `${baseUrl}/pricing?canceled=true`,
       customer_email: email,
       metadata: {
         plan,
