@@ -13,18 +13,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 })
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     // Parse the request body to get plan and email
-    const { plan, email } = await request.json()
+    const { plan, email } = await req.json()
 
     // Validate required fields
-    if (!plan || !email) {
-      return NextResponse.json({ error: "Missing required fields: plan and email are required" }, { status: 400 })
+    if (!plan) {
+      return NextResponse.json({ error: "Missing required field: plan" }, { status: 400 })
     }
 
-    // Log the request for debugging
-    console.log(`Creating checkout session for plan: ${plan}, email: ${email}`)
+    if (!email) {
+      return NextResponse.json({ error: "Missing required field: email" }, { status: 400 })
+    }
 
     // Determine the price ID based on the plan type
     let priceId: string | undefined
@@ -49,7 +50,6 @@ export async function POST(request: Request) {
     // Determine the domain for success and cancel URLs
     const domain =
       process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.DOMAIN ||
       (process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : "http://localhost:3000")
 
     // Create the checkout session
@@ -68,8 +68,6 @@ export async function POST(request: Request) {
       metadata: {
         plan,
       },
-      allow_promotion_codes: true,
-      billing_address_collection: "auto",
     })
 
     // Return the checkout session URL

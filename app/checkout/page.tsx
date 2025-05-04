@@ -12,9 +12,7 @@ import { Check, CreditCard, Loader2, Lock, Shield, ArrowLeft, ArrowRight } from 
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
-import { createCheckoutSession } from "@/lib/stripe-client"
 import { PremiumBackground } from "@/components/premium-background"
-import { loadStripe } from "@stripe/stripe-js"
 
 export default function CheckoutPage() {
   const [selectedPlan, setSelectedPlan] = useState<"subscription" | "lifetime">("subscription")
@@ -33,12 +31,15 @@ export default function CheckoutPage() {
     }
   }, [searchParams])
 
-  // Pre-fill email if user is logged in
+  // Pre-fill email if user is logged in or from URL
   useEffect(() => {
-    if (user?.email) {
+    const emailFromUrl = searchParams.get("email")
+    if (emailFromUrl) {
+      setEmail(emailFromUrl)
+    } else if (user?.email) {
       setEmail(user.email)
     }
-  }, [user])
+  }, [searchParams, user])
 
   const handleCheckout = async () => {
     if (!email) {
@@ -53,27 +54,31 @@ export default function CheckoutPage() {
     setIsLoading(true)
 
     try {
-      // Create checkout session with the plan type instead of trying to use the price ID directly
-      const { sessionId, url } = await createCheckoutSession(selectedPlan, email)
+      // Call our API to create a checkout session
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          plan: selectedPlan,
+          email,
+        }),
+      })
 
-      // Handle redirect to Stripe checkout
-      if (url) {
-        // Prefer direct URL redirect if available (better for edge functions)
-        window.location.href = url
-      } else if (sessionId) {
-        // Fall back to client-side redirect
-        const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
-        if (stripe) {
-          const { error } = await stripe.redirectToCheckout({ sessionId })
-          if (error) {
-            throw error
-          }
-        } else {
-          throw new Error("Failed to initialize Stripe")
-        }
-      } else {
-        throw new Error("No session ID or URL returned")
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || "Failed to create checkout session")
       }
+
+      const { url } = await res.json()
+
+      if (!url) {
+        throw new Error("No checkout URL returned from the server")
+      }
+
+      // Redirect to Stripe checkout
+      window.location.href = url
     } catch (error: any) {
       console.error("Error creating checkout session:", error)
       toast({
