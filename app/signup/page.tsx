@@ -5,7 +5,6 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,9 +54,6 @@ export default function SignupPage() {
       >
         <Card className="bg-black/40 border-white/10">
           <CardHeader>
-            <div className="flex justify-center mb-6">
-              <Image src="/logo-neon.png" alt="TradeCraft AI" width={80} height={80} priority />
-            </div>
             <CardTitle className="text-2xl text-white">Create an account</CardTitle>
             <CardDescription>Enter your details to create your account</CardDescription>
           </CardHeader>

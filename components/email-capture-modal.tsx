@@ -15,7 +15,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import Image from "next/image"
 
 export function EmailCaptureModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [email, setEmail] = useState("")
@@ -40,7 +39,6 @@ export function EmailCaptureModal({ isOpen, onClose }: { isOpen: boolean; onClos
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-black/40 border-white/10">
-        <Image src="/logo-neon.png" alt="TradeCraft AI" width={80} height={80} className="mb-4" />
         <DialogHeader>
           <DialogTitle className="text-2xl">Stay Updated</DialogTitle>
           <DialogDescription>

@@ -13,19 +13,3 @@ export async function getUserFromCookie(cookieStore: ReturnType<typeof cookies>)
 
   return user || null
 }
-
-export async function mockAuthWithBroker(broker: string): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve()
-    }, 1000)
-  })
-}
-
-export async function isAuthenticated(): Promise<{ authenticated: boolean; broker: string | null }> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ authenticated: true, broker: "Robinhood" })
-    }, 500)
-  })
-}

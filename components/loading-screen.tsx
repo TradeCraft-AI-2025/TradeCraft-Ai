@@ -12,7 +12,7 @@ export function LoadingScreen() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <Image src="/logo-neon.png" alt="TradeCraft AI" width={120} height={120} className="mb-8" priority />
+          <Image src="/logo.png" alt="TradeCraft AI Logo" width={120} height={120} className="object-contain" />
         </motion.div>
 
         <motion.div
