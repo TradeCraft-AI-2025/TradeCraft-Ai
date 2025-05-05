@@ -1,11 +1,15 @@
 import Link from "next/link"
 import { FileQuestion, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full space-y-8 text-center">
+        <div className="flex justify-center mb-8">
+          <Image src="/logo-neon.png" alt="TradeCraft AI" width={100} height={100} priority />
+        </div>
         <div className="flex justify-center">
           <div className="bg-blue-500/10 p-3 rounded-full">
             <FileQuestion className="h-10 w-10 text-blue-500" />

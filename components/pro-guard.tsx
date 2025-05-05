@@ -10,15 +10,15 @@ interface ProGuardProps {
 }
 
 export function ProGuard({ children, invert = false }: ProGuardProps) {
-  const { isPro } = usePro()
+  const { isPro, loading } = usePro()
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  // Don't render anything during server-side rendering
-  if (!isClient) {
+  // Don't render anything during server-side rendering or while loading
+  if (!isClient || loading) {
     return null
   }
 

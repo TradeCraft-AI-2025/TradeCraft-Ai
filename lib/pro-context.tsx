@@ -1,81 +1,72 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { useAuth } from "./auth-context"
 
-type ProContextType = {
+interface ProContextType {
   isPro: boolean
-  setIsPro: (value: boolean) => void
-  checkProStatus: () => boolean
+  loading: boolean
+  checkSubscription: () => Promise<void>
 }
 
-const ProContext = createContext<ProContextType | undefined>(undefined)
+const ProContext = createContext<ProContextType>({
+  isPro: false,
+  loading: true,
+  checkSubscription: async () => {},
+})
 
-export function ProProvider({ children }: { children: ReactNode }) {
+export const usePro = () => useContext(ProContext)
+
+interface ProProviderProps {
+  children: ReactNode
+}
+
+export function ProProvider({ children }: ProProviderProps) {
   const [isPro, setIsPro] = useState(false)
-  const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
 
-  // Check if user is Pro on mount and when user changes
-  useEffect(() => {
-    const checkStatus = () => {
-      try {
-        // First check localStorage
-        const localStatus = localStorage.getItem("subscribed") === "true"
-
-        // Then check user object from auth context if available
-        const userStatus =
-          user &&
-          (user.subscriptionStatus === "active" ||
-            user.subscriptionStatus === "lifetime" ||
-            (user.subscriptionExpires && new Date(user.subscriptionExpires) > new Date()))
-
-        // Use either source of truth
-        const finalStatus = localStatus || !!userStatus
-
-        // Update state
-        setIsPro(finalStatus)
-
-        // Sync localStorage with our determination
-        if (finalStatus) {
-          localStorage.setItem("subscribed", "true")
-        }
-
-        return finalStatus
-      } catch (error) {
-        console.error("Error checking Pro status:", error)
-        return false
-      }
-    }
-
-    checkStatus()
-
-    // Add event listener for storage changes (in case another tab updates subscription)
-    const handleStorageChange = () => {
-      checkStatus()
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-    }
-  }, [user])
-
-  const checkProStatus = () => {
+  const checkSubscription = async () => {
     try {
-      return isPro || localStorage.getItem("subscribed") === "true"
+      setLoading(true)
+
+      // First check localStorage for cached status
+      const cachedStatus = localStorage.getItem("subscribed")
+      if (cachedStatus === "true") {
+        setIsPro(true)
+      }
+
+      // Then verify with the server
+      const response = await fetch("/api/user/status")
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsPro(data.isPro)
+
+        // Update localStorage to match server state
+        localStorage.setItem("subscribed", data.isPro ? "true" : "false")
+      } else if (response.status === 401) {
+        // User is not logged in
+        setIsPro(false)
+        localStorage.removeItem("subscribed")
+      }
     } catch (error) {
-      console.error("Error checking Pro status:", error)
-      return false
+      console.error("Error checking subscription status:", error)
+      // On error, fall back to localStorage if available
+      const fallback = localStorage.getItem("subscribed") === "true"
+      setIsPro(fallback)
+    } finally {
+      setLoading(false)
     }
   }
 
-  return <ProContext.Provider value={{ isPro, setIsPro, checkProStatus }}>{children}</ProContext.Provider>
-}
+  useEffect(() => {
+    // Check subscription status on mount
+    checkSubscription()
 
-export function usePro() {
-  const context = useContext(ProContext)
-  if (context === undefined) {
-    throw new Error("usePro must be used within a ProProvider")
-  }
-  return context
+    // Set up interval to periodically check (every 5 minutes)
+    const interval = setInterval(checkSubscription, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return <ProContext.Provider value={{ isPro, loading, checkSubscription }}>{children}</ProContext.Provider>
 }

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { ArrowUp, ArrowDown, Plus, X, Loader2 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useRef } from "react"
+import { ArrowUp, ArrowDown, Plus, X, Check, Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getBatchQuotes, formatPrice, type StockQuote } from "@/lib/market-data"
@@ -27,6 +27,8 @@ export function LiveWatchlist({
   const [isLoading, setIsLoading] = useState(true)
   const [newTicker, setNewTicker] = useState("")
   const [refreshing, setRefreshing] = useState(false)
+  const [isAddingTicker, setIsAddingTicker] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
 
   // Load watchlist from localStorage on mount
@@ -48,6 +50,13 @@ export function LiveWatchlist({
   useEffect(() => {
     localStorage.setItem("tradecraft-watchlist", JSON.stringify(watchlist))
   }, [watchlist])
+
+  // Focus input when adding ticker
+  useEffect(() => {
+    if (isAddingTicker && inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [isAddingTicker])
 
   // Fetch quotes for watchlist
   useEffect(() => {
@@ -99,7 +108,10 @@ export function LiveWatchlist({
   }, [watchlist])
 
   const handleAddTicker = () => {
-    if (!newTicker) return
+    if (!newTicker) {
+      setIsAddingTicker(false)
+      return
+    }
 
     const formattedTicker = newTicker.toUpperCase().trim()
 
@@ -114,6 +126,7 @@ export function LiveWatchlist({
 
     setWatchlist([...watchlist, formattedTicker])
     setNewTicker("")
+    setIsAddingTicker(false)
 
     toast({
       title: "Added to watchlist",
@@ -204,35 +217,62 @@ export function LiveWatchlist({
 
   return (
     <Card className="h-full">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle>Watchlist</CardTitle>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
-          onClick={handleRefresh}
-          disabled={refreshing}
-        >
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshIcon className="h-4 w-4" />}
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="flex space-x-2 mb-4">
-          <Input
-            placeholder="Add ticker (e.g. AAPL)"
-            value={newTicker}
-            onChange={(e) => setNewTicker(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleAddTicker()
-              }
+      <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+        {isAddingTicker ? (
+          <form
+            className="flex items-center w-full space-x-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              handleAddTicker()
             }}
-          />
-          <Button onClick={handleAddTicker}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-
+          >
+            <Input
+              ref={inputRef}
+              placeholder="Add ticker (e.g. AAPL)"
+              value={newTicker}
+              onChange={(e) => setNewTicker(e.target.value)}
+              className="h-8"
+            />
+            <Button type="submit" size="sm" className="h-8 px-2">
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => setIsAddingTicker(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </form>
+        ) : (
+          <>
+            <h3 className="font-medium">Watchlist</h3>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-400/10"
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshIcon className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 flex items-center"
+                onClick={() => setIsAddingTicker(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Ticker
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+      <CardContent className="pt-4">
         <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2">
           {isLoading && watchlist.length > 0 && !Object.keys(quotes).length ? (
             // Loading skeletons

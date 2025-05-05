@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Home, RefreshCw } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function GlobalError({
   error,
@@ -22,6 +23,9 @@ export default function GlobalError({
       <body>
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <div className="max-w-md w-full space-y-8 text-center">
+            <div className="flex justify-center mb-8">
+              <Image src="/logo-neon.png" alt="TradeCraft AI" width={100} height={100} priority />
+            </div>
             <div className="flex justify-center">
               <div className="bg-red-500/10 p-3 rounded-full">
                 <AlertTriangle className="h-10 w-10 text-red-500" />

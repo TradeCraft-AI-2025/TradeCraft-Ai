@@ -2,17 +2,27 @@
 
 import { usePro } from "@/lib/pro-context"
 import { Badge } from "@/components/ui/badge"
-import { Crown } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 export function SubscriptionStatus() {
-  const { isPro } = usePro()
+  const { isPro, loading } = usePro()
 
-  if (!isPro) return null
+  if (loading) {
+    return null
+  }
+
+  if (!isPro) {
+    return (
+      <Badge variant="outline" className="ml-2">
+        Free
+      </Badge>
+    )
+  }
 
   return (
-    <Badge variant="outline" className="bg-gradient-to-r from-amber-500 to-amber-300 text-black border-none">
-      <Crown className="h-3 w-3 mr-1" />
-      <span className="font-medium">PRO</span>
+    <Badge className="bg-gradient-to-r from-indigo-500 to-purple-500 ml-2">
+      <Sparkles className="h-3 w-3 mr-1" />
+      Pro
     </Badge>
   )
 }

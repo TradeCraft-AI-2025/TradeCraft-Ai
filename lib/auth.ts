@@ -1,61 +1,31 @@
-import type { AuthState } from "./types"
+import type { cookies } from "next/headers"
+import type { User } from "./db-types"
+import { findUserByEmail } from "./user-service"
 
-// Mock authentication state
-let authState: AuthState = {
-  authenticated: false,
-  broker: null,
-  token: null,
+export async function getUserFromCookie(cookieStore: ReturnType<typeof cookies>): Promise<User | null> {
+  const userEmail = cookieStore.get("user_email")?.value
+
+  if (!userEmail) {
+    return null
+  }
+
+  const user = await findUserByEmail(userEmail)
+
+  return user || null
 }
 
-/**
- * Mock function to authenticate with a broker
- */
-export async function mockAuthWithBroker(provider: string): Promise<AuthState> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1500))
-
-  // Mock successful authentication
-  authState = {
-    authenticated: true,
-    broker: provider === "robinhood" ? "Robinhood" : "Webull",
-    token: `mock-token-${Date.now()}`,
-  }
-
-  // Store auth state in localStorage
-  if (typeof window !== "undefined") {
-    localStorage.setItem("authState", JSON.stringify(authState))
-  }
-
-  return authState
+export async function mockAuthWithBroker(broker: string): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve()
+    }, 1000)
+  })
 }
 
-/**
- * Check if user is authenticated
- */
-export async function isAuthenticated(): Promise<AuthState> {
-  // Check localStorage first
-  if (typeof window !== "undefined") {
-    const storedAuth = localStorage.getItem("authState")
-    if (storedAuth) {
-      authState = JSON.parse(storedAuth)
-    }
-  }
-
-  return authState
-}
-
-/**
- * Mock function to log out
- */
-export async function logout(): Promise<void> {
-  authState = {
-    authenticated: false,
-    broker: null,
-    token: null,
-  }
-
-  // Clear localStorage
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("authState")
-  }
+export async function isAuthenticated(): Promise<{ authenticated: boolean; broker: string | null }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ authenticated: true, broker: "Robinhood" })
+    }, 500)
+  })
 }

@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { ArrowUp, ArrowDown, TrendingUp, DollarSign, BarChart2, Wallet } from "lucide-react"
+import { ArrowUp, ArrowDown, TrendingUp, DollarSign, BarChart2, Wallet, ChevronDown, ChevronUp } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getBatchQuotes } from "@/lib/market-data"
+import { DashboardCard } from "@/components/ui/dashboard-card"
 
 interface PortfolioSummaryProps {
   className?: string
@@ -44,6 +44,7 @@ interface PortfolioData {
 export function PortfolioSummary({ className = "", isEmpty = false, onConnect }: PortfolioSummaryProps) {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showWatchlist, setShowWatchlist] = useState(false)
 
   useEffect(() => {
     // Load portfolio data with real prices
@@ -172,143 +173,211 @@ export function PortfolioSummary({ className = "", isEmpty = false, onConnect }:
     },
   }
 
+  if (isEmpty) {
+    return (
+      <DashboardCard
+        title="Portfolio Summary"
+        icon={<DollarSign className="h-5 w-5 text-cyan-500" />}
+        description="Your investment overview"
+        className={className}
+      >
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <DollarSign className="h-12 w-12 text-slate-500/30 mb-4" />
+          <h3 className="text-lg font-medium mb-2">No Portfolio Data</h3>
+          <p className="text-slate-500 mb-6">Add holdings to see your portfolio summary</p>
+          {onConnect && (
+            <Button onClick={onConnect} className="bg-cyan-600 hover:bg-cyan-700 text-white">
+              <Wallet className="mr-2 h-4 w-4" />
+              Connect Account
+            </Button>
+          )}
+        </div>
+      </DashboardCard>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardCard
+        title="Portfolio Summary"
+        icon={<DollarSign className="h-5 w-5 text-cyan-500" />}
+        description="Your investment overview"
+        className={className}
+      >
+        <div className="space-y-4">
+          <div className="h-10 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
+          <div className="h-20 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
+          <div className="h-40 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
+        </div>
+      </DashboardCard>
+    )
+  }
+
+  if (!portfolioData) {
+    return (
+      <DashboardCard
+        title="Portfolio Summary"
+        icon={<DollarSign className="h-5 w-5 text-cyan-500" />}
+        description="Your investment overview"
+        className={className}
+      >
+        <div className="space-y-4 text-center">
+          <p>Unable to load portfolio data</p>
+        </div>
+      </DashboardCard>
+    )
+  }
+
   return (
-    <Card className={`h-full ${className}`}>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center">
-          <DollarSign className="mr-2 h-5 w-5 text-cyan-500" />
-          Portfolio Summary
-        </CardTitle>
-        <CardDescription>Your investment overview</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-4">
-        {isLoading && !isEmpty ? (
-          <div className="space-y-4">
-            <div className="h-10 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
-            <div className="h-20 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
-            <div className="h-40 bg-gradient-to-r from-slate-700/20 to-slate-600/20 animate-shimmer rounded"></div>
-          </div>
-        ) : isEmpty ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <DollarSign className="h-12 w-12 text-slate-500/30 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No Portfolio Data</h3>
-            <p className="text-slate-500 mb-6">Add holdings to see your portfolio summary</p>
-            {onConnect && (
-              <Button onClick={onConnect} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-                <Wallet className="mr-2 h-4 w-4" />
-                Connect Account
-              </Button>
+    <DashboardCard
+      title="Portfolio Summary"
+      icon={<DollarSign className="h-5 w-5 text-cyan-500" />}
+      description="Your investment overview"
+      className={className}
+    >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+        <motion.div variants={itemVariants} className="flex flex-col items-center">
+          <div className="text-sm text-slate-400 mb-1">Total Portfolio Value</div>
+          <div className="text-3xl font-bold text-cyan-400">{formatCurrency(portfolioData.totalValue)}</div>
+          <div className="flex items-center mt-1">
+            {portfolioData.changePercent >= 0 ? (
+              <span className="text-green-400 flex items-center text-sm">
+                <ArrowUp className="h-4 w-4 mr-1" />
+                {formatCurrency(portfolioData.change)} ({portfolioData.changePercent.toFixed(2)}%)
+              </span>
+            ) : (
+              <span className="text-red-400 flex items-center text-sm">
+                <ArrowDown className="h-4 w-4 mr-1" />
+                {formatCurrency(Math.abs(portfolioData.change))} ({Math.abs(portfolioData.changePercent).toFixed(2)}
+                %)
+              </span>
             )}
           </div>
-        ) : portfolioData ? (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
-            <motion.div variants={itemVariants} className="flex flex-col items-center">
-              <div className="text-sm text-slate-400 mb-1">Total Portfolio Value</div>
-              <div className="text-3xl font-bold text-cyan-400">{formatCurrency(portfolioData.totalValue)}</div>
-              <div className="flex items-center mt-1">
-                {portfolioData.changePercent >= 0 ? (
-                  <span className="text-green-400 flex items-center text-sm">
-                    <ArrowUp className="h-4 w-4 mr-1" />
-                    {formatCurrency(portfolioData.change)} ({portfolioData.changePercent.toFixed(2)}%)
-                  </span>
-                ) : (
-                  <span className="text-red-400 flex items-center text-sm">
-                    <ArrowDown className="h-4 w-4 mr-1" />
-                    {formatCurrency(Math.abs(portfolioData.change))} ({Math.abs(portfolioData.changePercent).toFixed(2)}
-                    %)
-                  </span>
-                )}
-              </div>
-            </motion.div>
+        </motion.div>
 
-            <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                <div className="text-xs text-slate-400 mb-1">Today's Change</div>
-                <div className="flex items-center">
-                  {portfolioData.dayChangePercent >= 0 ? (
-                    <span className="text-green-400 flex items-center text-sm">
-                      <ArrowUp className="h-3 w-3 mr-1" />
-                      {portfolioData.dayChangePercent.toFixed(2)}%
-                    </span>
-                  ) : (
-                    <span className="text-red-400 flex items-center text-sm">
-                      <ArrowDown className="h-3 w-3 mr-1" />
-                      {Math.abs(portfolioData.dayChangePercent).toFixed(2)}%
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-slate-500 mt-1">{formatCurrency(portfolioData.dayChange)}</div>
-              </div>
+        {/* Collapsible Watchlist */}
+        <motion.div variants={itemVariants} className="w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowWatchlist(!showWatchlist)}
+            className="w-full flex justify-between items-center mb-2 bg-slate-800/50 border-slate-700/50 hover:bg-slate-800 hover:border-slate-600/50"
+          >
+            <span>Holdings Watchlist</span>
+            {showWatchlist ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
 
-              <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
-                <div className="text-xs text-slate-400 mb-1">Performance</div>
-                <div className="flex items-center">
-                  <TrendingUp className="h-4 w-4 text-cyan-500 mr-1" />
-                  <span className="text-sm text-cyan-500">
-                    {portfolioData.changePercent >= 0 ? "Outperforming" : "Underperforming"}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-500 mt-1">vs S&P 500</div>
-              </div>
-            </motion.div>
+          {showWatchlist && (
+            <div className="rounded-md border border-slate-700/50 overflow-hidden mb-4">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-800/70">
+                  <tr>
+                    <th className="text-left py-2 px-3 text-xs font-medium text-slate-400">Ticker</th>
+                    <th className="text-right py-2 px-3 text-xs font-medium text-slate-400">Last Price</th>
+                    <th className="text-right py-2 px-3 text-xs font-medium text-slate-400">% Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {portfolioData.holdings.map((holding, index) => (
+                    <tr key={index} className="border-t border-slate-700/30">
+                      <td className="py-2 px-3 font-medium">{holding.symbol}</td>
+                      <td className="py-2 px-3 text-right">{formatCurrency(holding.currentPrice || 0)}</td>
+                      <td
+                        className={`py-2 px-3 text-right ${
+                          holding.changePercent && holding.changePercent > 0 ? "text-green-400" : "text-red-400"
+                        }`}
+                      >
+                        {holding.changePercent && holding.changePercent > 0 ? "+" : ""}
+                        {holding.changePercent?.toFixed(2)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </motion.div>
 
-            <motion.div variants={itemVariants} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Asset Allocation</div>
-                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                  <BarChart2 className="h-3 w-3 mr-1" />
-                  Diversified
-                </Badge>
-              </div>
-
-              {portfolioData.allocation.map((item, index) => (
-                <div key={index} className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">{item.category}</div>
-                    <div className="text-xs text-slate-400">{item.percent.toFixed(1)}%</div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Progress value={item.percent} className="h-1.5 bg-slate-700/50" />
-                    <div
-                      className={`text-xs ml-2 ${
-                        item.change > 0 ? "text-green-400" : item.change < 0 ? "text-red-400" : "text-slate-400"
-                      }`}
-                    >
-                      {item.change > 0 ? "+" : ""}
-                      {item.change}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="space-y-2">
-              <div className="text-sm font-medium">Top Holdings</div>
-              {portfolioData.holdings.slice(0, 3).map((holding, index) => (
-                <div key={index} className="flex items-center justify-between text-xs p-2 bg-slate-800/30 rounded-md">
-                  <div>
-                    <div className="font-medium">{holding.symbol}</div>
-                    <div className="text-slate-400">{holding.shares} shares</div>
-                  </div>
-                  <div className="text-right">
-                    <div>{formatCurrency(holding.value || 0)}</div>
-                    <div
-                      className={holding.changePercent && holding.changePercent > 0 ? "text-green-400" : "text-red-400"}
-                    >
-                      {holding.changePercent && holding.changePercent > 0 ? "+" : ""}
-                      {holding.changePercent?.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </motion.div>
-        ) : (
-          <div className="space-y-4 text-center">
-            <p>Unable to load portfolio data</p>
+        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
+          <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+            <div className="text-xs text-slate-400 mb-1">Today's Change</div>
+            <div className="flex items-center">
+              {portfolioData.dayChangePercent >= 0 ? (
+                <span className="text-green-400 flex items-center text-sm">
+                  <ArrowUp className="h-3 w-3 mr-1" />
+                  {portfolioData.dayChangePercent.toFixed(2)}%
+                </span>
+              ) : (
+                <span className="text-red-400 flex items-center text-sm">
+                  <ArrowDown className="h-3 w-3 mr-1" />
+                  {Math.abs(portfolioData.dayChangePercent).toFixed(2)}%
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">{formatCurrency(portfolioData.dayChange)}</div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+
+          <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+            <div className="text-xs text-slate-400 mb-1">Performance</div>
+            <div className="flex items-center">
+              <TrendingUp className="h-4 w-4 text-cyan-500 mr-1" />
+              <span className="text-sm text-cyan-500">
+                {portfolioData.changePercent >= 0 ? "Outperforming" : "Underperforming"}
+              </span>
+            </div>
+            <div className="text-xs text-slate-500 mt-1">vs S&P 500</div>
+          </div>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">Asset Allocation</div>
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+              <BarChart2 className="h-3 w-3 mr-1" />
+              Diversified
+            </Badge>
+          </div>
+
+          {portfolioData.allocation.map((item, index) => (
+            <div key={index} className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="text-sm">{item.category}</div>
+                <div className="text-xs text-slate-400">{item.percent.toFixed(1)}%</div>
+              </div>
+              <div className="flex items-center justify-between">
+                <Progress value={item.percent} className="h-1.5 bg-slate-700/50" />
+                <div
+                  className={`text-xs ml-2 ${
+                    item.change > 0 ? "text-green-400" : item.change < 0 ? "text-red-400" : "text-slate-400"
+                  }`}
+                >
+                  {item.change > 0 ? "+" : ""}
+                  {item.change}%
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="space-y-2">
+          <div className="text-sm font-medium">Top Holdings</div>
+          {portfolioData.holdings.slice(0, 3).map((holding, index) => (
+            <div key={index} className="flex items-center justify-between text-xs p-2 bg-slate-800/30 rounded-md">
+              <div>
+                <div className="font-medium">{holding.symbol}</div>
+                <div className="text-slate-400">{holding.shares} shares</div>
+              </div>
+              <div className="text-right">
+                <div>{formatCurrency(holding.value || 0)}</div>
+                <div className={holding.changePercent && holding.changePercent > 0 ? "text-green-400" : "text-red-400"}>
+                  {holding.changePercent && holding.changePercent > 0 ? "+" : ""}
+                  {holding.changePercent?.toFixed(2)}%
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </motion.div>
+    </DashboardCard>
   )
 }
