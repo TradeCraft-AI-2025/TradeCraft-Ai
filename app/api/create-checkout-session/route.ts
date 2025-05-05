@@ -8,9 +8,6 @@ console.log({
   base: process.env.NEXT_PUBLIC_BASE_URL,
 })
 
-// Create a baseUrl with fallback to VERCEL_URL for preview deployments
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
-
 // Initialize Stripe with the secret key from environment variables
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
@@ -18,8 +15,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export async function POST(req: Request) {
   try {
-    // Parse the request body to get plan and email
-    const { plan, email } = await req.json()
+    // Parse the request body to get plan, email, and baseUrl
+    const { plan, email, baseUrl } = await req.json()
 
     // Validate required fields
     if (!plan) {
@@ -29,6 +26,10 @@ export async function POST(req: Request) {
     if (!email) {
       return NextResponse.json({ error: "Missing required field: email" }, { status: 400 })
     }
+
+    // Determine the origin URL to use for redirects
+    const origin =
+      baseUrl || process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
 
     // Determine the price ID based on the plan type
     let priceId: string | undefined
@@ -51,8 +52,8 @@ export async function POST(req: Request) {
     }
 
     // Validate that we have a base URL
-    if (!baseUrl) {
-      console.error("Missing both NEXT_PUBLIC_BASE_URL and VERCEL_URL environment variables")
+    if (!origin) {
+      console.error("Missing base URL from all possible sources")
       return NextResponse.json({ error: "Server configuration error: Missing base URL" }, { status: 500 })
     }
 
@@ -66,8 +67,8 @@ export async function POST(req: Request) {
         },
       ],
       mode,
-      success_url: `${baseUrl}/dashboard?success=true`,
-      cancel_url: `${baseUrl}/pricing?canceled=true`,
+      success_url: `${origin}/dashboard?success=true`,
+      cancel_url: `${origin}/pricing?canceled=true`,
       customer_email: email,
       metadata: {
         plan,

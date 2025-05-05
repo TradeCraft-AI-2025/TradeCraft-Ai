@@ -41,51 +41,35 @@ export default function CheckoutPage() {
     }
   }, [searchParams, user])
 
-  const handleCheckout = async () => {
-    if (!email) {
-      toast({
-        title: "Email required",
-        description: "Please enter your email address to continue.",
-        variant: "destructive",
-      })
-      return
-    }
-
+  const handleCheckout = async (selectedPlan: string) => {
     setIsLoading(true)
-
     try {
-      // Call our API to create a checkout session
-      const res = await fetch("/api/create-checkout-session", {
+      const response = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          plan: selectedPlan,
-          email,
+          planType: selectedPlan,
+          email: user?.email || "",
+          baseUrl: window.location.origin,
         }),
       })
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || "Failed to create checkout session")
+      if (!response.ok) {
+        throw new Error("Failed to create checkout session")
       }
 
-      const { url } = await res.json()
-
-      if (!url) {
-        throw new Error("No checkout URL returned from the server")
-      }
-
-      // Redirect to Stripe checkout
+      const { url } = await response.json()
       window.location.href = url
-    } catch (error: any) {
-      console.error("Error creating checkout session:", error)
+    } catch (error) {
+      console.error("Checkout error:", error)
       toast({
-        title: "Checkout error",
-        description: error.message || "Something went wrong. Please try again.",
+        title: "Error",
+        description: "Failed to initiate checkout. Please try again.",
         variant: "destructive",
       })
+    } finally {
       setIsLoading(false)
     }
   }
@@ -214,7 +198,7 @@ export default function CheckoutPage() {
               </CardContent>
               <CardFooter>
                 <Button
-                  onClick={handleCheckout}
+                  onClick={() => handleCheckout(selectedPlan)}
                   disabled={isLoading || !email}
                   className="w-full bg-[#FACC15] hover:bg-[#FACC15]/90 text-black"
                 >

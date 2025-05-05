@@ -17,6 +17,7 @@ export async function initiateCheckout(planType: string, email: string): Promise
       body: JSON.stringify({
         planType,
         email,
+        baseUrl: window.location.origin,
       }),
     })
 
