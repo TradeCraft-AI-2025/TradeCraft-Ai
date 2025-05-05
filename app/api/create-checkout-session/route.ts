@@ -15,8 +15,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export async function POST(req: Request) {
   try {
-    // Parse the request body to get plan, email, and baseUrl
+    // Parse the request body
     const { plan, email, baseUrl } = await req.json()
+
+    // Compute origin safely
+    const origin = baseUrl || process.env.NEXT_PUBLIC_BASE_URL || `https://${process.env.VERCEL_URL}`
+
+    // Log key information
+    console.log({ plan, email, origin })
 
     // Validate required fields
     if (!plan) {
@@ -26,10 +32,6 @@ export async function POST(req: Request) {
     if (!email) {
       return NextResponse.json({ error: "Missing required field: email" }, { status: 400 })
     }
-
-    // Determine the origin URL to use for redirects
-    const origin =
-      baseUrl || process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
 
     // Determine the price ID based on the plan type
     let priceId: string | undefined
@@ -49,12 +51,6 @@ export async function POST(req: Request) {
     if (!priceId) {
       console.error(`Missing price ID for plan: ${plan}`)
       return NextResponse.json({ error: "Server configuration error: Missing price ID" }, { status: 500 })
-    }
-
-    // Validate that we have a base URL
-    if (!origin) {
-      console.error("Missing base URL from all possible sources")
-      return NextResponse.json({ error: "Server configuration error: Missing base URL" }, { status: 500 })
     }
 
     // Create the checkout session with updated success and cancel URLs
@@ -78,8 +74,8 @@ export async function POST(req: Request) {
     // Return the checkout session URL
     return NextResponse.json({ url: session.url })
   } catch (error: any) {
-    // Log the error for debugging
-    console.error("Error creating checkout session:", error)
+    // Log the error for debugging with more detail
+    console.error("Stripe checkout error:", error)
 
     // Return an error response
     return NextResponse.json(

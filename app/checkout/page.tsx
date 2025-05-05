@@ -50,17 +50,21 @@ export default function CheckoutPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          planType: selectedPlan,
-          email: user?.email || "",
+          plan: selectedPlan,
+          email: email,
           baseUrl: window.location.origin,
         }),
       })
+
+      console.log("Checkout POST status:", response.status, response.statusText)
+      const data = await response.json().catch(() => null)
+      console.log("Checkout POST body:", data)
 
       if (!response.ok) {
         throw new Error("Failed to create checkout session")
       }
 
-      const { url } = await response.json()
+      const { url } = data
       window.location.href = url
     } catch (error) {
       console.error("Checkout error:", error)
