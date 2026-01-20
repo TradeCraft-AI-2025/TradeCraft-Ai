@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Facebook, Twitter, Instagram, Linkedin, Github } from "lucide-react"
+import Image from "next/image"
 
 export function SiteFooter() {
   return (
@@ -8,7 +9,10 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">TradeCraft AI</h3>
+            <div className="flex items-center mb-4">
+              <Image src="/logo-neon.png" alt="TradeCraft AI" width={40} height={40} className="mr-2" />
+              <span className="font-bold text-lg">TradeCraft AI</span>
+            </div>
             <p className="text-sm text-muted-foreground">
               Advanced trading platform with AI-powered insights and analysis for modern traders.
             </p>

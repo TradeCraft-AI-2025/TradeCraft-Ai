@@ -20,8 +20,8 @@ export function Logo({ variant = "default", animated = true, className = "", src
 
   const currentSize = sizes[variant]
 
-  // Use the provided src or default to the logo.png
-  const logoSrc = src || "/logo.png"
+  // Use the provided src or default to the logo-neon.png
+  const logoSrc = src || "/logo-neon.png"
 
   return (
     <Link href="/" className={`flex items-center space-x-2 ${className}`}>
@@ -40,13 +40,13 @@ export function Logo({ variant = "default", animated = true, className = "", src
             className="object-contain"
           />
           <motion.div
-            className="absolute inset-0 bg-[#00FFFF]/20 blur-md rounded-full"
+            className="absolute inset-0 bg-[#00FFFF]/30 blur-md rounded-full"
             animate={{
-              opacity: [0.5, 0.8, 0.5],
-              scale: [1, 1.1, 1],
+              opacity: [0.4, 0.7, 0.4],
+              scale: [1, 1.15, 1],
             }}
             transition={{
-              duration: 2,
+              duration: 2.5,
               repeat: Number.POSITIVE_INFINITY,
               repeatType: "reverse",
             }}

@@ -20,7 +20,7 @@ export function TickerBar({ symbols = [], className = "" }: TickerBarProps) {
   const [isConnected, setIsConnected] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [useMock, setUseMock] = useState(false)
+  const [useMock, setUseMock] = useState(true) // Initialize useMock to true
 
   // Get watchlist from localStorage if no symbols provided
   useEffect(() => {
@@ -52,132 +52,8 @@ export function TickerBar({ symbols = [], className = "" }: TickerBarProps) {
       symbols = initialSymbols
     }
 
-    // Determine whether to use mock data based on API key presence
-    const apiKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY
-    setUseMock(!apiKey)
-
-    // Connect to WebSocket or use mock data based on API key
-    if (!apiKey) {
-      console.error("Polygon API key not found")
-    }
+    useMockData(symbols, setTickers)
   }, [])
-
-  useEffect(() => {
-    if (useMock) {
-      useMockData(symbols, setTickers)
-    }
-  }, [useMock, symbols])
-
-  // Connect to Polygon WebSocket
-  useEffect(() => {
-    if (useMock) return
-    if (symbols.length === 0) return
-
-    const apiKey = process.env.NEXT_PUBLIC_POLYGON_API_KEY
-
-    if (!apiKey) {
-      console.error("Polygon API key not found")
-      return
-    }
-
-    const connect = () => {
-      try {
-        const ws = new WebSocket(`wss://socket.polygon.io/stocks`)
-        wsRef.current = ws
-
-        ws.onopen = () => {
-          console.log("Connected to Polygon WebSocket")
-          setIsConnected(true)
-
-          // Authenticate
-          ws.send(JSON.stringify({ action: "auth", params: apiKey }))
-
-          // Subscribe to ticker updates
-          ws.send(
-            JSON.stringify({
-              action: "subscribe",
-              params: symbols.map((sym) => `T.${sym}`),
-            }),
-          )
-        }
-
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-
-            if (data[0]?.ev === "T") {
-              // Process trade data
-              const trade = data[0]
-              const symbol = trade.sym
-              const price = trade.p
-              const prevClose = trade.h || price // Use high as fallback if no prev close
-              const change = price - prevClose
-              const changePercent = (change / prevClose) * 100
-
-              setTickers((prev) => {
-                // Update existing ticker or add new one
-                const exists = prev.some((t) => t.symbol === symbol)
-
-                if (exists) {
-                  return prev.map((t) =>
-                    t.symbol === symbol ? { ...t, price, change, changePercent, timestamp: Date.now() } : t,
-                  )
-                } else {
-                  return [
-                    ...prev,
-                    {
-                      symbol,
-                      price,
-                      change,
-                      changePercent,
-                      timestamp: Date.now(),
-                    },
-                  ]
-                }
-              })
-            }
-          } catch (err) {
-            console.error("Error processing WebSocket message:", err)
-          }
-        }
-
-        ws.onclose = () => {
-          console.log("Disconnected from Polygon WebSocket")
-          setIsConnected(false)
-
-          // Attempt to reconnect after 5 seconds
-          if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current)
-          }
-
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connect()
-          }, 5000)
-        }
-
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error)
-          ws.close()
-        }
-      } catch (err) {
-        console.error("Error connecting to WebSocket:", err)
-        // Use mock data as fallback
-      }
-    }
-
-    connect()
-
-    // Cleanup on unmount
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close()
-      }
-
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
-      }
-    }
-  }, [symbols, useMock])
 
   // If no tickers yet, show loading
   if (tickers.length === 0) {

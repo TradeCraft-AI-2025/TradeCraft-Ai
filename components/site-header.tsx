@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronRight, Menu, LogOut, User, LayoutDashboard, Shield, Zap } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useEffect } from "react"
-import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   DropdownMenu,
@@ -21,6 +20,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { SubscriptionStatus } from "@/components/subscription-status"
+import Image from "next/image"
 
 export function SiteHeader() {
   const pathname = usePathname()
@@ -61,7 +61,7 @@ export function SiteHeader() {
     >
       <div className="container flex h-16 items-center px-4 sm:px-6">
         <div className="mr-4 hidden md:flex">
-          <Logo className={cn("mr-6 transition-all duration-300", scrolled ? "scale-90" : "scale-100")} />
+          <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
           <nav className="flex items-center space-x-6 text-sm font-medium">
             {routes.map((route) => (
               <Link
@@ -90,7 +90,7 @@ export function SiteHeader() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="pr-0">
-                  <Logo className="mb-8" variant="default" />
+                  <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
                   <nav className="flex flex-col space-y-4">
                     {routes.map((route) => (
                       <Link
@@ -114,10 +114,7 @@ export function SiteHeader() {
                 </SheetContent>
               </Sheet>
 
-              <Logo
-                variant="small"
-                className={cn("transition-all duration-300", scrolled ? "scale-90" : "scale-100")}
-              />
+              <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
             </div>
           </div>
 
