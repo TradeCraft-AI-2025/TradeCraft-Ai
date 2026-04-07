@@ -9,48 +9,21 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import type { PortfolioHolding } from "@/lib/types"
-import { isAuthenticated } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { fetchStockQuote } from "@/lib/finnhub-api"
 import { AddPositionForm } from "@/components/add-position-form"
-import { createBrowserSupabaseClient } from "@/lib/supabase"
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 
-// Base portfolio data (without real-time prices)
 const basePortfolioData: Omit<
   PortfolioHolding,
   "currentPrice" | "unrealizedPL" | "unrealizedPLPercent" | "dayChangePercent"
 >[] = [
-  {
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    quantity: 10,
-    costBasis: 150.25,
-  },
-  {
-    symbol: "MSFT",
-    name: "Microsoft Corporation",
-    quantity: 5,
-    costBasis: 290.5,
-  },
-  {
-    symbol: "GOOGL",
-    name: "Alphabet Inc.",
-    quantity: 8,
-    costBasis: 135.2,
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc.",
-    quantity: 12,
-    costBasis: 145.3,
-  },
-  {
-    symbol: "TSLA",
-    name: "Tesla, Inc.",
-    quantity: 15,
-    costBasis: 190.25,
-  },
+  { symbol: "AAPL", name: "Apple Inc.", quantity: 10, costBasis: 150.25 },
+  { symbol: "MSFT", name: "Microsoft Corporation", quantity: 5, costBasis: 290.5 },
+  { symbol: "GOOGL", name: "Alphabet Inc.", quantity: 8, costBasis: 135.2 },
+  { symbol: "AMZN", name: "Amazon.com Inc.", quantity: 12, costBasis: 145.3 },
+  { symbol: "TSLA", name: "Tesla, Inc.", quantity: 15, costBasis: 190.25 },
 ]
 
 export default function PortfolioPage() {
@@ -59,35 +32,21 @@ export default function PortfolioPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [connectedBroker, setConnectedBroker] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [totalPL, setTotalPL] = useState({ value: 0, percent: 0 })
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const auth = await isAuthenticated()
-      if (!auth.authenticated) {
-        router.push("/")
-        return
-      }
+    loadPortfolioData()
+  }, [])
 
-      setConnectedBroker(auth.broker)
-      loadPortfolioData()
-    }
-
-    checkAuth()
-  }, [router])
-
-  // Load portfolio data whenever the base portfolio changes
   useEffect(() => {
     if (basePortfolio.length > 0) {
       loadPortfolioData()
     }
   }, [basePortfolio])
 
-  // Load saved portfolio from Supabase on mount
   useEffect(() => {
     const loadFromSupabase = async () => {
       try {
@@ -116,13 +75,10 @@ export default function PortfolioPage() {
     setError(null)
 
     try {
-      // Fetch real-time quotes for each stock in the portfolio
       const updatedPortfolio = await Promise.all(
         basePortfolio.map(async (holding) => {
           try {
             const quote = await fetchStockQuote(holding.symbol)
-
-            // Calculate unrealized P&L
             const currentPrice = quote.c
             const totalCost = holding.quantity * holding.costBasis
             const currentValue = holding.quantity * currentPrice
@@ -138,10 +94,9 @@ export default function PortfolioPage() {
             }
           } catch (err) {
             console.error(`Error fetching data for ${holding.symbol}:`, err)
-            // Return holding with estimated values if API fails
             return {
               ...holding,
-              currentPrice: holding.costBasis, // Use cost basis as fallback
+              currentPrice: holding.costBasis,
               unrealizedPL: 0,
               unrealizedPLPercent: 0,
               dayChangePercent: 0,
@@ -153,7 +108,6 @@ export default function PortfolioPage() {
       setPortfolio(updatedPortfolio)
       setLastUpdated(new Date())
 
-      // Persist to Supabase
       try {
         const supabase = createBrowserSupabaseClient()
         const { data: { user } } = await supabase.auth.getUser()
@@ -171,16 +125,11 @@ export default function PortfolioPage() {
         console.error("Failed to save portfolio to Supabase:", err)
       }
 
-      // Calculate total P/L
-      const totalCost = updatedPortfolio.reduce((sum, holding) => sum + holding.quantity * holding.costBasis, 0)
-      const totalValue = updatedPortfolio.reduce((sum, holding) => sum + holding.quantity * holding.currentPrice, 0)
+      const totalCost = updatedPortfolio.reduce((sum, h) => sum + h.quantity * h.costBasis, 0)
+      const totalValue = updatedPortfolio.reduce((sum, h) => sum + h.quantity * h.currentPrice, 0)
       const plValue = totalValue - totalCost
       const plPercent = totalCost > 0 ? (plValue / totalCost) * 100 : 0
-
-      setTotalPL({
-        value: plValue,
-        percent: plPercent,
-      })
+      setTotalPL({ value: plValue, percent: plPercent })
     } catch (err) {
       console.error("Error loading portfolio data:", err)
       setError(err instanceof Error ? err : new Error("Failed to load portfolio data"))
@@ -204,28 +153,14 @@ export default function PortfolioPage() {
 
   const handleAddPosition = async (symbol: string, quantity: number, costBasis: number) => {
     try {
-      // Try to get the company name from the API
-      let name = symbol
-      try {
-        const quote = await fetchStockQuote(symbol)
-        // In a real app, you would fetch the company name from an API
-        // For now, we'll just use the symbol as the name
-        name = symbol
-      } catch (err) {
-        console.error(`Error fetching data for ${symbol}:`, err)
-      }
-
-      // Add the new position to the base portfolio
       const newPosition = {
         symbol: symbol.toUpperCase(),
-        name,
+        name: symbol.toUpperCase(),
         quantity,
         costBasis,
       }
-
       setBasePortfolio((prev) => [...prev, newPosition])
       setShowAddForm(false)
-
       toast({
         title: "Position added",
         description: `Added ${quantity} shares of ${symbol.toUpperCase()} to your portfolio.`,
@@ -248,6 +183,15 @@ export default function PortfolioPage() {
     })
   }
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value)
+  }
+
   if (error) {
     return (
       <div className="container mx-auto py-10 px-4 max-w-6xl">
@@ -267,16 +211,6 @@ export default function PortfolioPage() {
     )
   }
 
-  // Format currency
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value)
-  }
-
   return (
     <div className="container mx-auto py-10 px-4 max-w-6xl relative">
       {isLoading && <LoadingSpinner text="Fetching latest market data..." />}
@@ -293,7 +227,7 @@ export default function PortfolioPage() {
             <h1 className="text-3xl font-bold tracking-tight">Your Portfolio</h1>
           </div>
           <p className="text-muted-foreground">
-            {connectedBroker ? `Connected to ${connectedBroker}` : "View and analyze your investments"}
+            View and analyze your investments
             {lastUpdated && <span className="text-xs ml-2">• Last updated: {lastUpdated.toLocaleTimeString()}</span>}
           </p>
         </div>
@@ -310,10 +244,6 @@ export default function PortfolioPage() {
       </div>
 
       <ErrorBoundary>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <PortfolioSummary portfolio={portfolio} />
-        </div>
-
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
@@ -345,23 +275,60 @@ export default function PortfolioPage() {
               </div>
             )}
 
-            <PortfolioTable portfolio={portfolio} isLoading={isLoading} onRemovePosition={handleRemovePosition} />
+            {portfolio.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700 text-slate-400">
+                      <th className="text-left py-3 px-2">Symbol</th>
+                      <th className="text-left py-3 px-2">Name</th>
+                      <th className="text-right py-3 px-2">Qty</th>
+                      <th className="text-right py-3 px-2">Price</th>
+                      <th className="text-right py-3 px-2">P/L</th>
+                      <th className="text-right py-3 px-2">Day</th>
+                      <th className="py-3 px-2"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {portfolio.map((h, i) => (
+                      <tr key={h.symbol} className="border-b border-slate-800">
+                        <td className="py-3 px-2 font-medium">{h.symbol}</td>
+                        <td className="py-3 px-2 text-slate-400">{h.name}</td>
+                        <td className="py-3 px-2 text-right">{h.quantity}</td>
+                        <td className="py-3 px-2 text-right">{formatCurrency(h.currentPrice)}</td>
+                        <td className={`py-3 px-2 text-right ${h.unrealizedPL >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          {formatCurrency(h.unrealizedPL)} ({h.unrealizedPLPercent >= 0 ? "+" : ""}{h.unrealizedPLPercent.toFixed(2)}%)
+                        </td>
+                        <td className={`py-3 px-2 text-right ${h.dayChangePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
+                          {h.dayChangePercent >= 0 ? "+" : ""}{h.dayChangePercent.toFixed(2)}%
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-slate-400" onClick={() => handleRemovePosition(i)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              !isLoading && <p className="text-center text-slate-500 py-8">No holdings yet. Add a position to get started.</p>
+            )}
 
-            {/* P/L Summary */}
             {portfolio.length > 0 && (
               <div className="mt-6 p-4 border border-slate-700 rounded-md bg-slate-800/50">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-sm font-medium mb-1">Total Portfolio P/L</h3>
-                    <p className="text-xs text-slate-400">Summary of your portfolio's overall performance</p>
+                    <p className="text-xs text-slate-400">Summary of your portfolio&apos;s overall performance</p>
                   </div>
                   <div className="mt-3 sm:mt-0 flex items-center">
                     <div className={`text-xl font-bold ${totalPL.value >= 0 ? "text-green-500" : "text-red-500"}`}>
                       {formatCurrency(totalPL.value)}
                     </div>
                     <div className={`ml-2 text-sm ${totalPL.percent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                      ({totalPL.percent >= 0 ? "+" : ""}
-                      {totalPL.percent.toFixed(2)}%)
+                      ({totalPL.percent >= 0 ? "+" : ""}{totalPL.percent.toFixed(2)}%)
                     </div>
                   </div>
                 </div>

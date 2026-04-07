@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Hexagon, Loader2, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { createBrowserSupabaseClient } from "@/lib/supabase"
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 
 export default function AuthPage() {
   const [email, setEmail] = useState("")

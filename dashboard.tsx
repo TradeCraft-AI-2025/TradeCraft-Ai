@@ -54,7 +54,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
-import { createBrowserSupabaseClient } from "@/lib/supabase"
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 import type { PortfolioHolding } from "@/lib/types"
 
 // Replace the Dashboard component with this updated version that includes Robinhood integration and alerts

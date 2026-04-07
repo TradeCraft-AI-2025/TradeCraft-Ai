@@ -7,11 +7,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2023-10-16",
 })
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-
 const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 )
 
 export async function POST(request: Request) {
@@ -19,10 +17,9 @@ export async function POST(request: Request) {
   const signature = headers().get("stripe-signature") || ""
 
   let event: Stripe.Event
-
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret!)
-  } catch (err) {
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+  } catch {
     return NextResponse.json({ error: "Webhook signature verification failed" }, { status: 400 })
   }
 
@@ -31,7 +28,6 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session
         const userId = session.metadata?.user_id
-
         if (userId) {
           await supabaseAdmin.from("subscriptions").upsert(
             {
@@ -49,18 +45,10 @@ export async function POST(request: Request) {
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription
-        const { data } = await supabaseAdmin
+        await supabaseAdmin
           .from("subscriptions")
-          .select("user_id")
+          .update({ status: "canceled", updated_at: new Date().toISOString() })
           .eq("stripe_subscription_id", subscription.id)
-          .single()
-
-        if (data) {
-          await supabaseAdmin
-            .from("subscriptions")
-            .update({ status: "canceled", updated_at: new Date().toISOString() })
-            .eq("user_id", data.user_id)
-        }
         break
       }
     }
