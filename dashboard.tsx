@@ -53,6 +53,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import Link from "next/link"
+import { createBrowserSupabaseClient } from "@/lib/supabase"
+import type { PortfolioHolding } from "@/lib/types"
 
 // Replace the Dashboard component with this updated version that includes Robinhood integration and alerts
 export default function Dashboard() {
@@ -74,7 +77,61 @@ export default function Dashboard() {
     symbol: "",
   })
 
+  const [noPortfolio, setNoPortfolio] = useState(false)
+
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Load portfolio from Supabase on mount
+  useEffect(() => {
+    const loadFromSupabase = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from("portfolios")
+          .select("holdings")
+          .eq("user_id", user.id)
+          .single()
+
+        if (error || !data) {
+          setNoPortfolio(true)
+          return
+        }
+
+        const holdings = data.holdings as PortfolioHolding[]
+        if (!holdings || holdings.length === 0) {
+          setNoPortfolio(true)
+          return
+        }
+
+        const totalValue = holdings.reduce((sum, h) => sum + h.quantity * h.currentPrice, 0)
+        const totalCost = holdings.reduce((sum, h) => sum + h.quantity * h.costBasis, 0)
+        const changePercent = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0
+
+        const positions = holdings.map((h) => ({
+          symbol: h.symbol,
+          name: h.name,
+          shares: h.quantity,
+          price: h.currentPrice,
+          value: h.quantity * h.currentPrice,
+          change: h.dayChangePercent,
+        }))
+
+        setRobinhoodData({
+          portfolio: { value: totalValue, change: changePercent, cash: 0 },
+          positions,
+          recentTrades: [],
+          watchlist: [],
+        })
+        setIsConnectedToRobinhood(true)
+      } catch (err) {
+        console.error("Failed to load portfolio from Supabase:", err)
+      }
+    }
+    loadFromSupabase()
+  }, [])
 
   // Simulate data loading
   useEffect(() => {
@@ -349,6 +406,20 @@ export default function Dashboard() {
               <div className="absolute inset-8 border-4 border-l-green-500 border-t-transparent border-r-transparent border-b-transparent rounded-full animate-spin"></div>
             </div>
             <div className="mt-4 text-cyan-500 font-mono text-sm tracking-wider">SYSTEM INITIALIZING</div>
+          </div>
+        </div>
+      )}
+
+      {noPortfolio && !isConnectedToRobinhood && (
+        <div className="absolute inset-0 flex items-center justify-center z-40">
+          <div className="text-center space-y-4 bg-slate-900/90 border border-slate-700/50 rounded-lg p-8 backdrop-blur-sm">
+            <Wallet className="h-12 w-12 text-slate-500 mx-auto" />
+            <p className="text-lg text-slate-200">No portfolio yet — import your CSV</p>
+            <Link href="/portfolio">
+              <Button className="bg-cyan-600 hover:bg-cyan-700">
+                Go to Portfolio <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       )}
