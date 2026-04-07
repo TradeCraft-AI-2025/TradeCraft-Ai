@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { BarChart2, ChevronDown, ChevronRight, Menu, LogOut, User, LayoutDashboard, Zap } from "lucide-react"
+import { BarChart2, ChevronDown, ChevronRight, Menu, LogOut, LayoutDashboard, Zap } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -16,20 +16,32 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/lib/auth-context"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { SubscriptionStatus } from "@/components/subscription-status"
+import { usePro } from "@/lib/pro-context"
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 import Image from "next/image"
+import type { User } from "@supabase/supabase-js"
 
 export function SiteHeader() {
   const pathname = usePathname()
-  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const { isAuthenticated, user, isPro } = useAuth()
+  const [user, setUser] = useState<User | null>(null)
+  const { isPro } = usePro()
 
-  // Handle scroll effect
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient()
+
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
   useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10
@@ -42,12 +54,21 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [scrolled])
 
+  const handleLogout = async () => {
+    const supabase = createBrowserSupabaseClient()
+    await supabase.auth.signOut()
+    window.location.href = "/"
+  }
+
   const routes = [
     { href: "/", label: "Home" },
     { href: "/portfolio", label: "Portfolio" },
     { href: "/dashboard", label: "Overview" },
     { href: "/pricing", label: "Pricing" },
   ]
+
+  const displayName = user?.email ?? "User"
+  const initial = user?.email?.charAt(0)?.toUpperCase() ?? "U"
 
   return (
     <header
@@ -60,7 +81,7 @@ export function SiteHeader() {
     >
       <div className="container flex h-16 items-center px-4 sm:px-6">
         <div className="mr-4 hidden md:flex">
-          <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
+          <Image src="/logo-neon.png" alt="TradeCraft" width={48} height={48} className="mr-2" />
           <nav className="flex items-center space-x-6 text-sm font-medium">
             {routes.map((route) => (
               <Link
@@ -79,7 +100,6 @@ export function SiteHeader() {
 
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
-            {/* Mobile logo and menu */}
             <div className="flex items-center justify-between md:hidden">
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
@@ -89,7 +109,7 @@ export function SiteHeader() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="pr-0">
-                  <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
+                  <Image src="/logo-neon.png" alt="TradeCraft" width={48} height={48} className="mr-2" />
                   <nav className="flex flex-col space-y-4">
                     {routes.map((route) => (
                       <Link
@@ -113,7 +133,7 @@ export function SiteHeader() {
                 </SheetContent>
               </Sheet>
 
-              <Image src="/logo-neon.png" alt="TradeCraft AI Logo" width={48} height={48} className="mr-2" />
+              <Image src="/logo-neon.png" alt="TradeCraft" width={48} height={48} className="mr-2" />
             </div>
           </div>
 
@@ -121,18 +141,14 @@ export function SiteHeader() {
             <SubscriptionStatus />
             <ThemeToggle />
 
-            {isAuthenticated ? (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="flex items-center gap-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user?.name || "User"} />
-                      <AvatarFallback className="bg-slate-700 text-cyan-500">
-                        {user?.name?.charAt(0) || user?.email?.charAt(0) || "U"}
-                      </AvatarFallback>
+                      <AvatarFallback className="bg-slate-700 text-cyan-500">{initial}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden md:inline-block">{user?.name || user?.email}</span>
-                    {isPro && <Badge className="ml-1 bg-[#5EEAD4]/20 text-[#5EEAD4] hover:bg-[#5EEAD4]/30">Pro</Badge>}
+                    <span className="hidden md:inline-block text-sm truncate max-w-[150px]">{displayName}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -162,14 +178,7 @@ export function SiteHeader() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer hover:bg-red-500/10 focus:bg-red-500/10"
-                    onClick={async () => {
-                      try {
-                        await fetch("/api/auth/logout", { method: "POST" })
-                        window.location.href = "/"
-                      } catch (error) {
-                        console.error("Logout error:", error)
-                      }
-                    }}
+                    onClick={handleLogout}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Log Out
