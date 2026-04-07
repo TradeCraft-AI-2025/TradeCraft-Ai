@@ -57,7 +57,7 @@ import Link from "next/link"
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 import type { PortfolioHolding } from "@/lib/types"
 
-// Replace the Dashboard component with this updated version that includes Robinhood integration and alerts
+// Portfolio overview dashboard
 export default function Dashboard() {
   const [theme, setTheme] = useState<"dark" | "light">("dark")
   const [systemStatus, setSystemStatus] = useState(85)
@@ -405,7 +405,7 @@ export default function Dashboard() {
               <div className="absolute inset-6 border-4 border-b-blue-500 border-t-transparent border-r-transparent border-l-transparent rounded-full animate-spin-slower"></div>
               <div className="absolute inset-8 border-4 border-l-green-500 border-t-transparent border-r-transparent border-b-transparent rounded-full animate-spin"></div>
             </div>
-            <div className="mt-4 text-cyan-500 font-mono text-sm tracking-wider">SYSTEM INITIALIZING</div>
+            <div className="mt-4 text-cyan-500 font-mono text-sm tracking-wider">LOADING OVERVIEW</div>
           </div>
         </div>
       )}
@@ -414,7 +414,7 @@ export default function Dashboard() {
         <div className="absolute inset-0 flex items-center justify-center z-40">
           <div className="text-center space-y-4 bg-slate-900/90 border border-slate-700/50 rounded-lg p-8 backdrop-blur-sm">
             <Wallet className="h-12 w-12 text-slate-500 mx-auto" />
-            <p className="text-lg text-slate-200">No portfolio yet — import your CSV</p>
+            <p className="text-lg text-slate-200">No holdings yet</p>
             <Link href="/portfolio">
               <Button className="bg-cyan-600 hover:bg-cyan-700">
                 Go to Portfolio <ArrowRight className="ml-2 h-4 w-4" />
@@ -430,7 +430,7 @@ export default function Dashboard() {
           <div className="flex items-center space-x-2">
             <Hexagon className="h-8 w-8 text-cyan-500" />
             <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              QUANTUM TRADE
+              TradeCraft
             </span>
           </div>
 
@@ -496,45 +496,39 @@ export default function Dashboard() {
             <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm h-full">
               <CardContent className="p-4">
                 <nav className="space-y-2">
-                  <NavItem icon={BarChart3} label="Markets" active />
+                  <NavItem icon={BarChart3} label="Overview" active />
                   <NavItem icon={LineChart} label="Portfolio" />
-                  <NavItem icon={Activity} label="Trading" />
-                  <NavItem icon={Globe} label="Global Markets" />
-                  <NavItem icon={Shield} label="Risk Analysis" />
-                  <NavItem icon={Zap} label="Quick Trade" />
-                  <NavItem icon={MessageSquare} label="News & Signals" />
+                  <NavItem icon={Shield} label="Risk" />
+                  <NavItem icon={Globe} label="Market Context" />
+                  <NavItem icon={MessageSquare} label="News" />
                   <NavItem icon={BellRing} label="Alerts" />
-                  <NavItem icon={Settings} label="Settings" />
                 </nav>
 
                 <div className="mt-8 pt-6 border-t border-slate-700/50">
-                  <div className="text-xs text-slate-500 mb-2 font-mono">SYSTEM STATUS</div>
+                  <div className="text-xs text-slate-500 mb-2 font-mono">PORTFOLIO STATUS</div>
                   <div className="space-y-3">
-                    <StatusItem label="Market Status" value={systemStatus} color="cyan" />
+                    <StatusItem label="Market" value={systemStatus} color="cyan" />
                     <StatusItem label="Portfolio Health" value={securityLevel} color="green" />
-                    <StatusItem label="Trading Activity" value={networkStatus} color="blue" />
+                    <StatusItem label="Data Freshness" value={networkStatus} color="blue" />
                   </div>
                 </div>
 
-                {/* Robinhood Connection Status */}
                 <div className="mt-8 pt-6 border-t border-slate-700/50">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs text-slate-500 font-mono">ROBINHOOD</div>
+                    <div className="text-xs text-slate-500 font-mono">PORTFOLIO DATA</div>
                     {isConnectedToRobinhood ? (
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Connected</Badge>
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Loaded</Badge>
                     ) : (
-                      <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/50">Disconnected</Badge>
+                      <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/50">No data</Badge>
                     )}
                   </div>
                   {!isConnectedToRobinhood && (
-                    <Button
-                      onClick={connectToRobinhood}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                      size="sm"
-                    >
-                      <Wallet className="mr-2 h-4 w-4" />
-                      Connect Account
-                    </Button>
+                    <Link href="/portfolio">
+                      <Button className="w-full bg-cyan-600 hover:bg-cyan-700 text-white" size="sm">
+                        <Wallet className="mr-2 h-4 w-4" />
+                        Add Holdings
+                      </Button>
+                    </Link>
                   )}
                   {isConnectedToRobinhood && (
                     <div className="text-xs text-slate-400 mt-1">Last synced: {formatTime(new Date())}</div>
@@ -553,7 +547,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-slate-100 flex items-center">
                       <Activity className="mr-2 h-5 w-5 text-cyan-500" />
-                      {isConnectedToRobinhood ? "Robinhood Portfolio" : "Market Overview"}
+                      {isConnectedToRobinhood ? "Portfolio Overview" : "Market Overview"}
                     </CardTitle>
                     <div className="flex items-center space-x-2">
                       <Badge variant="outline" className="bg-slate-800/50 text-cyan-400 border-cyan-500/50 text-xs">
@@ -587,18 +581,18 @@ export default function Dashboard() {
                           detail={`$${robinhoodData.portfolio.cash.toLocaleString()}`}
                         />
                         <MetricCard
-                          title="Trading Activity"
-                          value={networkStatus}
+                          title="Holdings"
+                          value={robinhoodData.positions.length}
                           icon={BarChart3}
-                          trend="down"
+                          trend="stable"
                           color="blue"
-                          detail={`${robinhoodData.recentTrades.length} trades today`}
+                          detail={`${robinhoodData.positions.length} positions`}
                         />
                       </>
                     ) : (
                       <>
                         <MetricCard
-                          title="Market Volatility"
+                          title="Market Sentiment"
                           value={cpuUsage}
                           icon={Activity}
                           trend="up"
@@ -606,20 +600,20 @@ export default function Dashboard() {
                           detail="VIX 24.8 | +2.3%"
                         />
                         <MetricCard
-                          title="Portfolio Value"
+                          title="S&P 500"
                           value={memoryUsage}
                           icon={LineChart}
                           trend="stable"
                           color="purple"
-                          detail="$124,568.42 | +0.8%"
+                          detail="Market context"
                         />
                         <MetricCard
-                          title="Trading Volume"
+                          title="Market Volume"
                           value={networkStatus}
                           icon={BarChart3}
                           trend="down"
                           color="blue"
-                          detail="$1.2M | 42 trades"
+                          detail="Broad market data"
                         />
                       </>
                     )}
@@ -633,13 +627,13 @@ export default function Dashboard() {
                             value="performance"
                             className="data-[state=active]:bg-slate-700 data-[state=active]:text-cyan-400"
                           >
-                            Price Charts
+                            Market Charts
                           </TabsTrigger>
                           <TabsTrigger
                             value="processes"
                             className="data-[state=active]:bg-slate-700 data-[state=active]:text-cyan-400"
                           >
-                            {isConnectedToRobinhood ? "Recent Trades" : "Market Activity"}
+                            Market Activity
                           </TabsTrigger>
                           <TabsTrigger
                             value="storage"
@@ -827,19 +821,19 @@ export default function Dashboard() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-400">Volatility Protection</div>
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                        <div className="text-sm text-slate-400">Concentration Risk</div>
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Low</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-400">Stop Loss Orders</div>
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                        <div className="text-sm text-slate-400">Sector Diversification</div>
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Good</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-400">Diversification</div>
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Active</Badge>
+                        <div className="text-sm text-slate-400">Volatility Exposure</div>
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">Moderate</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-400">Market Analysis</div>
+                        <div className="text-sm text-slate-400">Market Context</div>
                         <div className="text-sm text-cyan-400">
                           Updated <span className="text-slate-500">12 min ago</span>
                         </div>
@@ -847,7 +841,7 @@ export default function Dashboard() {
 
                       <div className="pt-2 mt-2 border-t border-slate-700/50">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="text-sm font-medium">Portfolio Safety</div>
+                          <div className="text-sm font-medium">Overall Risk Score</div>
                           <div className="text-sm text-cyan-400">{securityLevel}%</div>
                         </div>
                         <Progress value={securityLevel} className="h-2 bg-slate-700">
@@ -1010,58 +1004,46 @@ export default function Dashboard() {
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-slate-100 flex items-center text-base">
                     <MessageSquare className="mr-2 h-5 w-5 text-blue-500" />
-                    Market News & Signals
+                    Market News
                   </CardTitle>
                   <Badge variant="outline" className="bg-slate-800/50 text-blue-400 border-blue-500/50">
-                    4 New Messages
+                    Recent
                   </Badge>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <CommunicationItem
-                      sender="Market Analyst"
+                      sender="Market Context"
                       time="15:42:12"
                       message="Tech sector showing strength after positive earnings from major players."
                       avatar="/placeholder.svg?height=40&width=40"
                       unread
                     />
                     <CommunicationItem
-                      sender="Trading Signal"
+                      sender="Market Insight"
                       time="14:30:45"
-                      message="MACD crossover detected on AAPL, suggesting bullish momentum."
+                      message="Rising momentum in large-cap tech may affect portfolio concentration."
                       avatar="/placeholder.svg?height=40&width=40"
                       unread
                     />
                     <CommunicationItem
-                      sender="News Alert"
+                      sender="News"
                       time="12:15:33"
                       message="Federal Reserve signals potential rate cut in upcoming meeting."
                       avatar="/placeholder.svg?height=40&width=40"
                       unread
                     />
                     <CommunicationItem
-                      sender="Portfolio Alert"
+                      sender="Portfolio"
                       time="09:05:18"
-                      message="Your portfolio has outperformed the S&P 500 by 2.3% this month."
+                      message="Your holdings have outperformed the S&P 500 by 2.3% this month."
                       avatar="/placeholder.svg?height=40&width=40"
                       unread
                     />
                   </div>
                 </CardContent>
                 <CardFooter className="border-t border-slate-700/50 pt-4">
-                  <div className="flex items-center w-full space-x-2">
-                    <input
-                      type="text"
-                      placeholder="Type a message..."
-                      className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                    <Button size="icon" className="bg-blue-600 hover:bg-blue-700">
-                      <Mic className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" className="bg-cyan-600 hover:bg-cyan-700">
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <div className="text-xs text-slate-500">News and insights are illustrative during the beta period.</div>
                 </CardFooter>
               </Card>
             </div>
@@ -1083,7 +1065,7 @@ export default function Dashboard() {
                   <div className="p-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-slate-800/50 rounded-md p-3 border border-slate-700/50">
-                        <div className="text-xs text-slate-500 mb-1">Trading Day</div>
+                        <div className="text-xs text-slate-500 mb-1">Session</div>
                         <div className="text-sm font-mono text-slate-200">6h 42m 18s</div>
                       </div>
                       <div className="bg-slate-800/50 rounded-md p-3 border border-slate-700/50">
@@ -1135,8 +1117,8 @@ export default function Dashboard() {
                   ) : (
                     <div className="flex flex-col items-center justify-center py-6 text-slate-500">
                       <LineChart className="h-12 w-12 mb-2 opacity-20" />
-                      <p className="text-sm">No watchlist available</p>
-                      <p className="text-xs mt-1">Connect your Robinhood account to see your watchlist</p>
+                      <p className="text-sm">No watchlist yet</p>
+                      <p className="text-xs mt-1">Add holdings in your portfolio to track them here</p>
                     </div>
                   )}
                 </CardContent>
@@ -1149,9 +1131,9 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
-                    <ActionButton icon={LineChart} label="Buy Assets" />
-                    <ActionButton icon={BarChart3} label="Sell Assets" />
-                    <ActionButton icon={Download} label="Export Data" />
+                    <ActionButton icon={LineChart} label="Portfolio" />
+                    <ActionButton icon={BarChart3} label="Insights" />
+                    <ActionButton icon={Download} label="Export" />
                     <ActionButton icon={RefreshCw} label="Refresh" />
                   </div>
                 </CardContent>
@@ -1265,38 +1247,38 @@ export default function Dashboard() {
               {/* Trading settings */}
               <Card className="bg-slate-900/50 border-slate-700/50 backdrop-blur-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-slate-100 text-base">Trading Settings</CardTitle>
+                  <CardTitle className="text-slate-100 text-base">Preferences</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <Radio className="text-cyan-500 mr-2 h-4 w-4" />
-                        <Label className="text-sm text-slate-400">Automated Trading</Label>
-                      </div>
-                      <Switch />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <Lock className="text-cyan-500 mr-2 h-4 w-4" />
-                        <Label className="text-sm text-slate-400">2FA Authentication</Label>
+                        <BellRing className="text-cyan-500 mr-2 h-4 w-4" />
+                        <Label className="text-sm text-slate-400">Price Alerts</Label>
                       </div>
                       <Switch defaultChecked />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <Zap className="text-cyan-500 mr-2 h-4 w-4" />
-                        <Label className="text-sm text-slate-400">Instant Execution</Label>
+                        <Shield className="text-cyan-500 mr-2 h-4 w-4" />
+                        <Label className="text-sm text-slate-400">Risk Notifications</Label>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <MessageSquare className="text-cyan-500 mr-2 h-4 w-4" />
+                        <Label className="text-sm text-slate-400">Daily Brief</Label>
                       </div>
                       <Switch />
                     </div>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <CircleOff className="text-cyan-500 mr-2 h-4 w-4" />
-                        <Label className="text-sm text-slate-400">Stop Loss Orders</Label>
+                        <RefreshCw className="text-cyan-500 mr-2 h-4 w-4" />
+                        <Label className="text-sm text-slate-400">Auto-refresh Data</Label>
                       </div>
                       <Switch defaultChecked />
                     </div>
