@@ -7,8 +7,6 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PortfolioTable } from "@/components/portfolio-table"
-import { PortfolioSummary } from "@/components/portfolio-summary"
 import { useToast } from "@/components/ui/use-toast"
 import type { PortfolioHolding } from "@/lib/types"
 import { isAuthenticated } from "@/lib/auth"
