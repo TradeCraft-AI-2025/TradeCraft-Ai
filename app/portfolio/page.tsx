@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingSpinner } from "@/components/loading-spinner"
 import { fetchStockQuote } from "@/lib/finnhub-api"
 import { AddPositionForm } from "@/components/add-position-form"
+import { createBrowserSupabaseClient } from "@/lib/supabase"
 
 // Base portfolio data (without real-time prices)
 const basePortfolioData: Omit<
@@ -86,6 +87,30 @@ export default function PortfolioPage() {
     }
   }, [basePortfolio])
 
+  // Load saved portfolio from Supabase on mount
+  useEffect(() => {
+    const loadFromSupabase = async () => {
+      try {
+        const supabase = createBrowserSupabaseClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { data, error } = await supabase
+          .from("portfolios")
+          .select("holdings")
+          .eq("user_id", user.id)
+          .single()
+
+        if (error || !data) return
+        setPortfolio(data.holdings as PortfolioHolding[])
+        setShowAddForm(false)
+      } catch (err) {
+        console.error("Failed to load portfolio from Supabase:", err)
+      }
+    }
+    loadFromSupabase()
+  }, [])
+
   const loadPortfolioData = async () => {
     setIsLoading(true)
     setError(null)
@@ -127,6 +152,24 @@ export default function PortfolioPage() {
 
       setPortfolio(updatedPortfolio)
       setLastUpdated(new Date())
+
+      // Persist to Supabase
+      try {
+        const supabase = createBrowserSupabaseClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from("portfolios").upsert(
+            {
+              user_id: user.id,
+              holdings: updatedPortfolio,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          )
+        }
+      } catch (err) {
+        console.error("Failed to save portfolio to Supabase:", err)
+      }
 
       // Calculate total P/L
       const totalCost = updatedPortfolio.reduce((sum, holding) => sum + holding.quantity * holding.costBasis, 0)
