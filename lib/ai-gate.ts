@@ -10,11 +10,11 @@ export async function checkAIAccess(
 
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select("status")
     .eq("user_id", userId)
     .single()
 
-  if (sub && sub.plan === "pro" && sub.status === "active") {
+  if (sub && sub.status === "active") {
     return { allowed: true, remaining: -1, isPro: true }
   }
 
