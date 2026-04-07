@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { SubscriptionStatus } from "@/components/subscription-status"
 import { usePro } from "@/lib/pro-context"
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 import Image from "next/image"
@@ -138,7 +137,6 @@ export function SiteHeader() {
           </div>
 
           <div className="flex items-center gap-2">
-            <SubscriptionStatus />
             <ThemeToggle />
 
             {user ? (
@@ -153,7 +151,7 @@ export function SiteHeader() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 border-border">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground truncate">{user?.email}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <Link href="/portfolio">
                     <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
