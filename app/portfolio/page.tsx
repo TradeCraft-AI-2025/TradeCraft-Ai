@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
 import { ArrowLeft, Download, RefreshCw, Plus, X } from "lucide-react"
 import Link from "next/link"
 
@@ -15,195 +14,159 @@ import { fetchStockQuote } from "@/lib/finnhub-api"
 import { AddPositionForm } from "@/components/add-position-form"
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser"
 
-const basePortfolioData: Omit<
-  PortfolioHolding,
-  "currentPrice" | "unrealizedPL" | "unrealizedPLPercent" | "dayChangePercent"
->[] = [
-  { symbol: "AAPL", name: "Apple Inc.", quantity: 10, costBasis: 150.25 },
-  { symbol: "MSFT", name: "Microsoft Corporation", quantity: 5, costBasis: 290.5 },
-  { symbol: "GOOGL", name: "Alphabet Inc.", quantity: 8, costBasis: 135.2 },
-  { symbol: "AMZN", name: "Amazon.com Inc.", quantity: 12, costBasis: 145.3 },
-  { symbol: "TSLA", name: "Tesla, Inc.", quantity: 15, costBasis: 190.25 },
-]
-
 export default function PortfolioPage() {
   const [portfolio, setPortfolio] = useState<PortfolioHolding[]>([])
-  const [basePortfolio, setBasePortfolio] = useState(basePortfolioData)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [totalPL, setTotalPL] = useState({ value: 0, percent: 0 })
-  const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
-    loadPortfolioData()
+  const refreshQuotes = useCallback(async (holdings: PortfolioHolding[]) => {
+    if (holdings.length === 0) return holdings
+
+    return Promise.all(
+      holdings.map(async (h) => {
+        try {
+          const quote = await fetchStockQuote(h.symbol)
+          const currentPrice = quote.c
+          const totalCost = h.quantity * h.costBasis
+          const currentValue = h.quantity * currentPrice
+          const unrealizedPL = currentValue - totalCost
+          const unrealizedPLPercent = totalCost > 0 ? (unrealizedPL / totalCost) * 100 : 0
+          return { ...h, currentPrice, unrealizedPL, unrealizedPLPercent, dayChangePercent: quote.dp || 0 }
+        } catch {
+          return { ...h, currentPrice: h.currentPrice || h.costBasis, unrealizedPL: h.unrealizedPL || 0, unrealizedPLPercent: h.unrealizedPLPercent || 0, dayChangePercent: h.dayChangePercent || 0 }
+        }
+      })
+    )
+  }, [])
+
+  const saveToSupabase = useCallback(async (holdings: PortfolioHolding[]) => {
+    try {
+      const supabase = createBrowserSupabaseClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase.from("portfolios").upsert(
+          { user_id: user.id, holdings, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        )
+      }
+    } catch (err) {
+      console.error("Failed to save portfolio to Supabase:", err)
+    }
+  }, [])
+
+  const recalcPL = useCallback((holdings: PortfolioHolding[]) => {
+    const totalCost = holdings.reduce((sum, h) => sum + h.quantity * h.costBasis, 0)
+    const totalValue = holdings.reduce((sum, h) => sum + h.quantity * (h.currentPrice || h.costBasis), 0)
+    const plValue = totalValue - totalCost
+    setTotalPL({ value: plValue, percent: totalCost > 0 ? (plValue / totalCost) * 100 : 0 })
   }, [])
 
   useEffect(() => {
-    if (basePortfolio.length > 0) {
-      loadPortfolioData()
-    }
-  }, [basePortfolio])
-
-  useEffect(() => {
-    const loadFromSupabase = async () => {
+    const load = async () => {
+      setIsLoading(true)
       try {
         const supabase = createBrowserSupabaseClient()
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) { setIsLoading(false); return }
 
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("portfolios")
           .select("holdings")
           .eq("user_id", user.id)
           .single()
 
-        if (error || !data) return
-        setPortfolio(data.holdings as PortfolioHolding[])
-        setShowAddForm(false)
-      } catch (err) {
-        console.error("Failed to load portfolio from Supabase:", err)
-      }
-    }
-    loadFromSupabase()
-  }, [])
-
-  const loadPortfolioData = async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const updatedPortfolio = await Promise.all(
-        basePortfolio.map(async (holding) => {
-          try {
-            const quote = await fetchStockQuote(holding.symbol)
-            const currentPrice = quote.c
-            const totalCost = holding.quantity * holding.costBasis
-            const currentValue = holding.quantity * currentPrice
-            const unrealizedPL = currentValue - totalCost
-            const unrealizedPLPercent = (unrealizedPL / totalCost) * 100
-
-            return {
-              ...holding,
-              currentPrice,
-              unrealizedPL,
-              unrealizedPLPercent,
-              dayChangePercent: quote.dp || 0,
-            }
-          } catch (err) {
-            console.error(`Error fetching data for ${holding.symbol}:`, err)
-            return {
-              ...holding,
-              currentPrice: holding.costBasis,
-              unrealizedPL: 0,
-              unrealizedPLPercent: 0,
-              dayChangePercent: 0,
-            }
-          }
-        }),
-      )
-
-      setPortfolio(updatedPortfolio)
-      setLastUpdated(new Date())
-
-      try {
-        const supabase = createBrowserSupabaseClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from("portfolios").upsert(
-            {
-              user_id: user.id,
-              holdings: updatedPortfolio,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" }
-          )
+        if (data?.holdings && (data.holdings as PortfolioHolding[]).length > 0) {
+          const saved = data.holdings as PortfolioHolding[]
+          const refreshed = await refreshQuotes(saved)
+          setPortfolio(refreshed)
+          setLastUpdated(new Date())
+          recalcPL(refreshed)
+          await saveToSupabase(refreshed)
         }
       } catch (err) {
-        console.error("Failed to save portfolio to Supabase:", err)
+        console.error("Failed to load portfolio:", err)
+      } finally {
+        setIsLoading(false)
       }
+    }
+    load()
+  }, [refreshQuotes, saveToSupabase, recalcPL])
 
-      const totalCost = updatedPortfolio.reduce((sum, h) => sum + h.quantity * h.costBasis, 0)
-      const totalValue = updatedPortfolio.reduce((sum, h) => sum + h.quantity * h.currentPrice, 0)
-      const plValue = totalValue - totalCost
-      const plPercent = totalCost > 0 ? (plValue / totalCost) * 100 : 0
-      setTotalPL({ value: plValue, percent: plPercent })
+  const handleRefresh = async () => {
+    if (portfolio.length === 0) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const refreshed = await refreshQuotes(portfolio)
+      setPortfolio(refreshed)
+      setLastUpdated(new Date())
+      recalcPL(refreshed)
+      await saveToSupabase(refreshed)
+      toast({ title: "Portfolio refreshed", description: "Market prices updated." })
     } catch (err) {
-      console.error("Error loading portfolio data:", err)
-      setError(err instanceof Error ? err : new Error("Failed to load portfolio data"))
-      toast({
-        title: "Error loading portfolio",
-        description: "There was an error loading your portfolio data. Please try again.",
-        variant: "destructive",
-      })
+      setError(err instanceof Error ? err : new Error("Failed to refresh"))
+      toast({ title: "Error refreshing", description: "Please try again.", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleRefresh = () => {
-    loadPortfolioData()
-    toast({
-      title: "Portfolio refreshed",
-      description: "Your portfolio data has been updated with the latest market prices.",
-    })
-  }
-
   const handleAddPosition = async (symbol: string, quantity: number, costBasis: number) => {
-    try {
-      const newPosition = {
-        symbol: symbol.toUpperCase(),
-        name: symbol.toUpperCase(),
-        quantity,
-        costBasis,
-      }
-      setBasePortfolio((prev) => [...prev, newPosition])
-      setShowAddForm(false)
-      toast({
-        title: "Position added",
-        description: `Added ${quantity} shares of ${symbol.toUpperCase()} to your portfolio.`,
-      })
-    } catch (err) {
-      console.error("Error adding position:", err)
-      toast({
-        title: "Error adding position",
-        description: "There was an error adding the position to your portfolio.",
-        variant: "destructive",
-      })
+    const newHolding: PortfolioHolding = {
+      symbol: symbol.toUpperCase(),
+      name: symbol.toUpperCase(),
+      quantity,
+      costBasis,
+      currentPrice: costBasis,
+      unrealizedPL: 0,
+      unrealizedPLPercent: 0,
+      dayChangePercent: 0,
     }
+
+    try {
+      const quote = await fetchStockQuote(newHolding.symbol)
+      newHolding.currentPrice = quote.c
+      const totalCost = quantity * costBasis
+      const currentValue = quantity * quote.c
+      newHolding.unrealizedPL = currentValue - totalCost
+      newHolding.unrealizedPLPercent = totalCost > 0 ? (newHolding.unrealizedPL / totalCost) * 100 : 0
+      newHolding.dayChangePercent = quote.dp || 0
+    } catch {
+      // keep cost-basis defaults
+    }
+
+    const updated = [...portfolio, newHolding]
+    setPortfolio(updated)
+    recalcPL(updated)
+    setShowAddForm(false)
+    await saveToSupabase(updated)
+    toast({ title: "Position added", description: `Added ${quantity} shares of ${symbol.toUpperCase()}.` })
   }
 
-  const handleRemovePosition = (index: number) => {
-    setBasePortfolio((prev) => prev.filter((_, i) => i !== index))
-    toast({
-      title: "Position removed",
-      description: "The position has been removed from your portfolio.",
-    })
+  const handleRemovePosition = async (index: number) => {
+    const updated = portfolio.filter((_, i) => i !== index)
+    setPortfolio(updated)
+    recalcPL(updated)
+    await saveToSupabase(updated)
+    toast({ title: "Position removed", description: "The position has been removed." })
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value)
-  }
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
 
   if (error) {
     return (
       <div className="container mx-auto py-10 px-4 max-w-6xl">
-        <ErrorBoundary onReset={loadPortfolioData}>
+        <ErrorBoundary onReset={handleRefresh}>
           <div className="flex flex-col items-center justify-center py-12">
             <h2 className="text-2xl font-bold mb-4">Unable to load portfolio data</h2>
-            <p className="text-muted-foreground mb-6">
-              {error.message || "There was an error fetching your portfolio data from the market API."}
-            </p>
-            <Button onClick={loadPortfolioData}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
+            <p className="text-muted-foreground mb-6">{error.message}</p>
+            <Button onClick={handleRefresh}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Try Again
             </Button>
           </div>
         </ErrorBoundary>
@@ -213,15 +176,14 @@ export default function PortfolioPage() {
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-6xl relative">
-      {isLoading && <LoadingSpinner text="Fetching latest market data..." />}
+      {isLoading && <LoadingSpinner text="Loading portfolio..." />}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Link href="/">
               <Button variant="ghost" size="sm" className="h-8 gap-1">
-                <ArrowLeft className="h-4 w-4" />
-                Back
+                <ArrowLeft className="h-4 w-4" /> Back
               </Button>
             </Link>
             <h1 className="text-3xl font-bold tracking-tight">Your Portfolio</h1>
@@ -233,12 +195,10 @@ export default function PortfolioPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="h-9">
-            <Download className="h-4 w-4 mr-2" />
-            Export
+            <Download className="h-4 w-4 mr-2" /> Export
           </Button>
-          <Button size="sm" className="h-9" onClick={handleRefresh} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
+          <Button size="sm" className="h-9" onClick={handleRefresh} disabled={isLoading || portfolio.length === 0}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} /> Refresh
           </Button>
         </div>
       </div>
@@ -250,21 +210,11 @@ export default function PortfolioPage() {
               <CardTitle>Holdings</CardTitle>
               <CardDescription>
                 Your current portfolio holdings and performance
-                {lastUpdated && (
-                  <span className="text-xs ml-2">• Market data as of {lastUpdated.toLocaleTimeString()}</span>
-                )}
+                {lastUpdated && <span className="text-xs ml-2">• Market data as of {lastUpdated.toLocaleTimeString()}</span>}
               </CardDescription>
             </div>
             <Button onClick={() => setShowAddForm(!showAddForm)} variant="outline" size="sm" className="h-8 gap-1">
-              {showAddForm ? (
-                <>
-                  <X className="h-4 w-4" /> Cancel
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" /> Add Position
-                </>
-              )}
+              {showAddForm ? <><X className="h-4 w-4" /> Cancel</> : <><Plus className="h-4 w-4" /> Add Position</>}
             </Button>
           </CardHeader>
           <CardContent>
@@ -291,7 +241,7 @@ export default function PortfolioPage() {
                   </thead>
                   <tbody>
                     {portfolio.map((h, i) => (
-                      <tr key={h.symbol} className="border-b border-slate-800">
+                      <tr key={h.symbol + i} className="border-b border-slate-800">
                         <td className="py-3 px-2 font-medium">{h.symbol}</td>
                         <td className="py-3 px-2 text-slate-400">{h.name}</td>
                         <td className="py-3 px-2 text-right">{h.quantity}</td>
@@ -313,7 +263,15 @@ export default function PortfolioPage() {
                 </table>
               </div>
             ) : (
-              !isLoading && <p className="text-center text-slate-500 py-8">No holdings yet. Add a position to get started.</p>
+              !isLoading && (
+                <div className="text-center py-12">
+                  <p className="text-slate-400 mb-2">No holdings yet</p>
+                  <p className="text-sm text-slate-500 mb-4">Add positions to start tracking your portfolio.</p>
+                  <Button variant="outline" size="sm" onClick={() => setShowAddForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" /> Add your first position
+                  </Button>
+                </div>
+              )
             )}
 
             {portfolio.length > 0 && (
@@ -321,7 +279,7 @@ export default function PortfolioPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="text-sm font-medium mb-1">Total Portfolio P/L</h3>
-                    <p className="text-xs text-slate-400">Summary of your portfolio&apos;s overall performance</p>
+                    <p className="text-xs text-slate-400">Overall performance</p>
                   </div>
                   <div className="mt-3 sm:mt-0 flex items-center">
                     <div className={`text-xl font-bold ${totalPL.value >= 0 ? "text-green-500" : "text-red-500"}`}>
