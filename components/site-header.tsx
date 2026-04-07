@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronRight, Menu, LogOut, User, LayoutDashboard, Shield, Zap } from "lucide-react"
+import { BarChart2, ChevronDown, ChevronRight, Menu, LogOut, User, LayoutDashboard, Zap } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState, useEffect } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -42,12 +42,11 @@ export function SiteHeader() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [scrolled])
 
-  // Update the routes array to include all required pages
   const routes = [
     { href: "/", label: "Home" },
-    { href: "/dashboard", label: "Dashboard" },
+    { href: "/portfolio", label: "Portfolio" },
+    { href: "/dashboard", label: "Overview" },
     { href: "/pricing", label: "Pricing" },
-    { href: "/about", label: "About" },
   ]
 
   return (
@@ -140,27 +139,20 @@ export function SiteHeader() {
                 <DropdownMenuContent align="end" className="w-56 border-border">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <Link href="/account">
+                  <Link href="/portfolio">
                     <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
-                      <User className="h-4 w-4 mr-2" />
-                      Account Settings
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Portfolio
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/dashboard">
                     <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
-                      <LayoutDashboard className="h-4 w-4 mr-2" />
-                      Dashboard
+                      <BarChart2 className="h-4 w-4 mr-2" />
+                      Overview
                     </DropdownMenuItem>
                   </Link>
-                  {isPro ? (
-                    <Link href="/pro">
-                      <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Pro Tools
-                      </DropdownMenuItem>
-                    </Link>
-                  ) : (
-                    <Link href="/pro">
+                  {!isPro && (
+                    <Link href="/pricing">
                       <DropdownMenuItem className="cursor-pointer hover:bg-[#5EEAD4]/10">
                         <Zap className="h-4 w-4 mr-2" />
                         Upgrade to Pro
@@ -185,22 +177,11 @@ export function SiteHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Link href="/login">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2 hidden md:flex border-[#5EEAD4]/30 hover:border-[#5EEAD4]/50 hover:bg-[#5EEAD4]/10"
-                  >
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button size="sm" className="bg-[#FACC15] hover:bg-[#FACC15]/90 text-black">
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
+              <Link href="/auth">
+                <Button size="sm" className="bg-[#FACC15] hover:bg-[#FACC15]/90 text-black">
+                  Sign in
+                </Button>
+              </Link>
             )}
           </div>
         </div>
