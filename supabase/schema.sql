@@ -46,7 +46,23 @@ create policy "Users can delete own portfolio"
   on portfolios for delete
   using (auth.uid() = user_id);
 
--- 3. AI usage
+-- 3. Subscriptions
+create table subscriptions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid references auth.users not null unique,
+  plan       text not null default 'free',
+  status     text not null default 'active',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table subscriptions enable row level security;
+
+create policy "Users can read own subscription"
+  on subscriptions for select
+  using (auth.uid() = user_id);
+
+-- 4. AI usage
 create table ai_usage (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid references auth.users not null,
