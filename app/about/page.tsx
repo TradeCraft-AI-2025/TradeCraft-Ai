@@ -141,18 +141,18 @@ export default function AboutPage() {
             Join the traders who are using data and discipline to transform their approach to the markets.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link href="/signup">
+            <Link href="/auth">
               <Button size="lg" className="bg-[#FACC15] hover:bg-[#FACC15]/90 text-black">
                 Get Started
               </Button>
             </Link>
-            <Link href="/pro">
+            <Link href="/pricing">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-[#5EEAD4]/30 hover:border-[#5EEAD4]/50 hover:bg-[#5EEAD4]/10"
               >
-                Explore Pro Features
+                See Pricing
               </Button>
             </Link>
           </div>

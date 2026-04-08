@@ -7,17 +7,14 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from "@/lib/auth-context"
 import { ProProvider } from "@/lib/pro-context"
 
-// Primary font - Montserrat for modern, luxury feel
 const fontSans = Montserrat({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
 })
 
-// Secondary font - Playfair Display for luxury accents
 const fontSerif = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-serif",
@@ -27,14 +24,6 @@ const fontSerif = Playfair_Display({
 export const metadata: Metadata = {
   title: "TradeCraft | Portfolio Intelligence",
   description: "Understand your holdings, concentration, and portfolio risk — in plain English.",
-  icons: {
-    icon: [
-      { url: "/logo-neon.png", sizes: "32x32", type: "image/png" },
-      { url: "/logo-neon.png", sizes: "16x16", type: "image/png" },
-    ],
-    apple: [{ url: "/logo-neon.png", sizes: "180x180", type: "image/png" }],
-  },
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -46,17 +35,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, fontSerif.variable)}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
-          <AuthProvider>
-            <ProProvider>
-              <div className="relative flex min-h-screen flex-col bg-black">
-                <div className="h-8"></div> {/* Add space for the status strip */}
-                <SiteHeader />
-                <div className="relative flex-1 z-10">{children}</div>
-                <SiteFooter />
-                <Toaster />
-              </div>
-            </ProProvider>
-          </AuthProvider>
+          <ProProvider>
+            <div className="relative flex min-h-screen flex-col bg-black">
+              <SiteHeader />
+              <div className="relative flex-1 z-10">{children}</div>
+              <SiteFooter />
+              <Toaster />
+            </div>
+          </ProProvider>
         </ThemeProvider>
       </body>
     </html>
