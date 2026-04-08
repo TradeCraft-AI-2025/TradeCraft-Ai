@@ -25,8 +25,8 @@ const fontSerif = Playfair_Display({
 })
 
 export const metadata: Metadata = {
-  title: "TradeCraft AI | Your AI-Powered Trading Terminal",
-  description: "Advanced trading platform with AI-powered insights and analysis",
+  title: "TradeCraft | Portfolio Intelligence",
+  description: "Understand your holdings, concentration, and portfolio risk — in plain English.",
   icons: {
     icon: [
       { url: "/logo-neon.png", sizes: "32x32", type: "image/png" },
