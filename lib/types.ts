@@ -8,9 +8,3 @@ export interface PortfolioHolding {
   unrealizedPLPercent: number
   dayChangePercent: number
 }
-
-export interface AuthState {
-  authenticated: boolean
-  broker: string | null
-  token: string | null
-}
