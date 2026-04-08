@@ -4,11 +4,31 @@ import { NextResponse, type NextRequest } from "next/server"
 const protectedRoutes = ["/portfolio", "/dashboard"]
 
 export async function middleware(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    const isProtected = protectedRoutes.some(
+      (route) =>
+        request.nextUrl.pathname === route ||
+        request.nextUrl.pathname.startsWith(route + "/")
+    )
+
+    if (isProtected) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/"
+      url.searchParams.set("auth", "required")
+      return NextResponse.redirect(url)
+    }
+
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
